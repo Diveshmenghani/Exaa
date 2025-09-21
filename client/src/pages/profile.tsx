@@ -96,8 +96,8 @@ export default function Profile() {
         title: 'Unstaking Successful!',
         description: 'Your tokens have been unstaked and rewards claimed.',
       });
-      queryClient.invalidateQueries({ queryKey: ['userStakes'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      queryClient.invalidateQueries({ queryKey: ['userStakes', walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users', walletAddress] });
     },
     onError: (error) => {
       toast({
