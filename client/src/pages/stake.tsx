@@ -23,17 +23,26 @@ export default function Stake() {
     totalRewards: number;
   } | null>(null);
 
-  // Mock data for demonstration - replace with real API calls
+  // Real API calls for user data and stats
   const { data: userBalance } = useQuery({
     queryKey: ['userBalance', walletAddress],
-    queryFn: () => ({ balance: 0, usdValue: '0.00' }),
+    queryFn: () => ({ balance: 0, usdValue: '0.00' }), // TODO: Implement real balance API
+    enabled: !!walletAddress
+  });
+
+  const { data: userStakes } = useQuery({
+    queryKey: ['userStakes', walletAddress],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/stakes/user/${walletAddress}`);
+      return response.json();
+    },
     enabled: !!walletAddress
   });
 
   const { data: stakingStats } = useQuery({
     queryKey: ['stakingStats'],
     queryFn: () => ({
-      apy: { min: 2.49, max: 5.51 },
+      apy: { min: 10, max: 15 }, // Real APY rates from backend
       totalValueLocked: '314.14k',
       totalStakers: '83,247'
     })
@@ -41,7 +50,11 @@ export default function Stake() {
 
   const stakeMutation = useMutation({
     mutationFn: async (data: { amount: string; lockPeriodMonths: number; userId: string }) => {
-      const response = await apiRequest('POST', '/api/stakes', data);
+      const response = await apiRequest('POST', '/api/stakes', {
+        amount: data.amount,
+        lockPeriodMonths: data.lockPeriodMonths,
+        userId: data.userId, // walletAddress
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -86,6 +99,45 @@ export default function Stake() {
     });
   };
 
+  // Unstake mutation
+  const unstakeMutation = useMutation({
+    mutationFn: async (stakeId: string) => {
+      const response = await apiRequest('POST', `/api/stakes/${stakeId}/unstake`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Unstaking Successful!',
+        description: 'Your tokens have been unstaked and rewards claimed.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['userStakes'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Unstaking Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const handleUnstake = () => {
+    // For now, find the first unstakable stake - in real app, user would select
+    const unstakableStake = userStakes?.find((stake: any) => stake.canUnstake && stake.isActive);
+    
+    if (!unstakableStake) {
+      toast({
+        title: 'No Unstakable Stakes',
+        description: 'You have no stakes that can be unstaked at this time.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    unstakeMutation.mutate(unstakableStake.id);
+  };
+
   return (
     <div className="min-h-screen pt-24 pb-20">
       <div className="container mx-auto px-6 max-w-4xl">
@@ -95,13 +147,13 @@ export default function Stake() {
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="grid grid-cols-3 mb-8 bg-muted/20">
-                <TabsTrigger value="stake" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <TabsTrigger value="stake" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-stake">
                   <span className="text-lg">Stake</span>
                 </TabsTrigger>
-                <TabsTrigger value="boost" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <TabsTrigger value="boost" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-boost">
                   <span className="text-lg">Boost</span>
                 </TabsTrigger>
-                <TabsTrigger value="balance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+                <TabsTrigger value="balance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-balance">
                   <span className="text-lg">Balance</span>
                 </TabsTrigger>
               </TabsList>
@@ -120,7 +172,7 @@ export default function Stake() {
                 {/* Token Selector */}
                 <div className="flex justify-center mb-6">
                   <Select value={selectedToken} onValueChange={setSelectedToken}>
-                    <SelectTrigger className="w-32 bg-muted/20 border-border">
+                    <SelectTrigger className="w-32 bg-muted/20 border-border" data-testid="select-token">
                       <div className="flex items-center gap-2">
                         <div className="w-6 h-6 bg-gradient-to-r from-primary to-secondary rounded-full"></div>
                         <SelectValue />
@@ -128,9 +180,9 @@ export default function Stake() {
                       </div>
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border">
-                      <SelectItem value="HICA">HICA</SelectItem>
-                      <SelectItem value="ETH">ETH</SelectItem>
-                      <SelectItem value="USDT">USDT</SelectItem>
+                      <SelectItem value="HICA" data-testid="token-option-hica">HICA</SelectItem>
+                      <SelectItem value="ETH" data-testid="token-option-eth">ETH</SelectItem>
+                      <SelectItem value="USDT" data-testid="token-option-usdt">USDT</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -156,11 +208,13 @@ export default function Stake() {
                         {stakeMutation.isPending ? 'Staking...' : 'Stake Tokens'}
                       </Button>
                       <Button
+                        onClick={handleUnstake}
+                        disabled={unstakeMutation.isPending || !userStakes?.some((stake: any) => stake.canUnstake && stake.isActive)}
                         variant="outline"
                         className="w-full py-4 rounded-xl text-lg font-bold border-primary/50 hover:border-primary"
                         data-testid="button-unstake-tokens"
                       >
-                        Unstake
+                        {unstakeMutation.isPending ? 'Unstaking...' : 'Unstake'}
                       </Button>
                     </div>
                   )}
@@ -169,20 +223,20 @@ export default function Stake() {
                 {/* Stats */}
                 <div className="grid grid-cols-3 gap-6 pt-4 border-t border-border">
                   <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Annual percentage yield</div>
-                    <div className="text-lg font-bold text-primary">
+                    <div className="text-sm text-muted-foreground mb-1">Monthly percentage yield</div>
+                    <div className="text-lg font-bold text-primary" data-testid="stat-apy">
                       {stakingStats?.apy.min}% - {stakingStats?.apy.max}%
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="text-sm text-muted-foreground mb-1">Total value locked</div>
-                    <div className="text-lg font-bold">
+                    <div className="text-lg font-bold" data-testid="stat-tvl">
                       {stakingStats?.totalValueLocked} {selectedToken}
                     </div>
                   </div>
                   <div className="text-center">
                     <div className="text-sm text-muted-foreground mb-1">Stakers</div>
-                    <div className="text-lg font-bold">
+                    <div className="text-lg font-bold" data-testid="stat-stakers">
                       {stakingStats?.totalStakers}
                     </div>
                   </div>

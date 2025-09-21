@@ -51,6 +51,16 @@ export default function Profile() {
     },
   });
 
+  // Fetch user stakes for unstaking
+  const { data: userStakes } = useQuery({
+    queryKey: ['userStakes', walletAddress],
+    queryFn: async () => {
+      const response = await apiRequest('GET', `/api/stakes/user/${walletAddress}`);
+      return response.json();
+    },
+    enabled: !!walletAddress && !!user
+  });
+
   // Claim referral rewards mutation
   const claimMutation = useMutation({
     mutationFn: async () => {
@@ -69,6 +79,29 @@ export default function Profile() {
     onError: (error) => {
       toast({
         title: 'Claim Failed',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Unstake mutation
+  const unstakeMutation = useMutation({
+    mutationFn: async (stakeId: string) => {
+      const response = await apiRequest('POST', `/api/stakes/${stakeId}/unstake`);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: 'Unstaking Successful!',
+        description: 'Your tokens have been unstaked and rewards claimed.',
+      });
+      queryClient.invalidateQueries({ queryKey: ['userStakes'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Unstaking Failed',
         description: error.message,
         variant: 'destructive',
       });
@@ -257,7 +290,7 @@ export default function Profile() {
                     <div className="text-sm text-muted-foreground">From Staking</div>
                   </div>
                   <div className="text-center p-4 bg-muted/10 rounded-lg">
-                    <div className="text-2xl font-bold text-secondary mb-1" data-testid="text-referral-earnings">
+                    <div className="text-2xl font-bold text-secondary mb-1" data-testid="text-referral-earnings-amount">
                       {parseFloat(user?.referralEarnings || '0').toLocaleString()}
                     </div>
                     <div className="text-sm text-muted-foreground">From Referrals</div>
@@ -274,11 +307,24 @@ export default function Profile() {
                     {claimMutation.isPending ? 'Claiming...' : 'Claim Referral Income'}
                   </Button>
                   <Button
+                    onClick={() => {
+                      const unstakableStake = userStakes?.find((stake: any) => stake.canUnstake && stake.isActive);
+                      if (!unstakableStake) {
+                        toast({
+                          title: 'No Unstakable Stakes',
+                          description: 'You have no stakes that can be unstaked at this time.',
+                          variant: 'destructive',
+                        });
+                        return;
+                      }
+                      unstakeMutation.mutate(unstakableStake.id);
+                    }}
+                    disabled={unstakeMutation.isPending || !userStakes?.some((stake: any) => stake.canUnstake && stake.isActive)}
                     variant="outline"
                     className="w-full py-3 rounded-lg border-primary/50 hover:border-primary"
-                    data-testid="button-unstake"
+                    data-testid="button-unstake-tokens"
                   >
-                    Unstake Tokens
+                    {unstakeMutation.isPending ? 'Unstaking...' : 'Unstake Tokens'}
                   </Button>
                 </div>
               </CardContent>
@@ -308,7 +354,7 @@ export default function Profile() {
                     const levelCount = referrals.filter(r => r.level === level).length;
                     const commissionRate = level === 1 ? 12 : level === 2 ? 8 : level === 3 ? 6 : level === 4 ? 4 : 2;
                     return (
-                      <div key={level} className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+                      <div key={level} className="flex justify-between items-center p-3 bg-muted/10 rounded-lg" data-testid={`referral-level-${level}`}>
                         <div className="flex items-center gap-3">
                           <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center text-sm font-bold">
                             L{level}
@@ -316,14 +362,14 @@ export default function Profile() {
                           <span>Level {level}</span>
                         </div>
                         <div className="text-right">
-                          <div className="font-bold">{levelCount} people</div>
+                          <div className="font-bold" data-testid={`level-${level}-count`}>{levelCount} people</div>
                           <div className="text-sm text-muted-foreground">{commissionRate}% commission</div>
                         </div>
                       </div>
                     );
                   })}
                   {referrals.some(r => r.level > 5) && (
-                    <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
+                    <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg" data-testid="referral-levels-6-plus">
                       <div className="flex items-center gap-3">
                         <div className="w-8 h-8 bg-gradient-to-r from-accent to-primary rounded-full flex items-center justify-center text-xs font-bold">
                           6+
@@ -331,7 +377,7 @@ export default function Profile() {
                         <span>Levels 6-25</span>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold">{referrals.filter(r => r.level > 5).length} people</div>
+                        <div className="font-bold" data-testid="levels-6-plus-count">{referrals.filter(r => r.level > 5).length} people</div>
                         <div className="text-sm text-muted-foreground">1-0.25% commission</div>
                       </div>
                     </div>
