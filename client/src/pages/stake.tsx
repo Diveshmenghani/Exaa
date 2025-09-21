@@ -2,26 +2,35 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Slider } from '@/components/ui/slider';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import StakingCalculator from '@/components/staking-calculator';
-import { ChevronDown } from 'lucide-react';
 
 export default function Stake() {
   const { toast } = useToast();
   const { walletAddress, isConnected, connect } = useWallet();
-  const [selectedToken, setSelectedToken] = useState('HICA');
-  const [activeTab, setActiveTab] = useState('stake');
-  const [calculationData, setCalculationData] = useState<{
-    amount: string;
-    lockPeriod: number;
-    referralLevel: number;
-    monthlyRewards: number;
-    totalRewards: number;
-  } | null>(null);
+  const [stakeAmount, setStakeAmount] = useState('');
+  const [lockPeriod, setLockPeriod] = useState([12]); // Slider uses array format
+
+  // Calculate APY based on lock period
+  const calculateAPY = (months: number) => {
+    if (months >= 24) return 15; // 2 years = 15%
+    if (months >= 12) return 12; // 1 year = 12%
+    return 10; // Less than 1 year = 10%
+  };
+
+  // Calculate estimated rewards
+  const calculateRewards = () => {
+    if (!stakeAmount || isNaN(parseFloat(stakeAmount))) return 0;
+    const amount = parseFloat(stakeAmount);
+    const apy = calculateAPY(lockPeriod[0]);
+    const monthlyReward = (amount * apy) / 100;
+    return monthlyReward * lockPeriod[0];
+  };
 
   // Real API calls for user data and stats
   const { data: userBalance } = useQuery({
@@ -49,35 +58,28 @@ export default function Stake() {
     enabled: !!walletAddress
   });
 
-  const { data: stakingStats } = useQuery({
-    queryKey: ['stakingStats'],
-    queryFn: async () => {
-      // Calculate real stats - for now using known APY rates from backend
-      return {
-        apy: { min: 10, max: 15 }, // Monthly APY from backend (10%, 12%, 15%)
-        totalValueLocked: '314.14k', // This would come from aggregating all stakes
-        totalStakers: '83,247' // This would come from counting unique stakers
-      };
-    }
-  });
+  // Remove stakingStats query - no longer needed
 
   const stakeMutation = useMutation({
-    mutationFn: async (data: { amount: string; lockPeriodMonths: number; userId: string; token: string }) => {
+    mutationFn: async (data: { amount: string; lockPeriodMonths: number; userId: string }) => {
       const response = await apiRequest('POST', '/api/stakes', {
         amount: data.amount,
         lockPeriodMonths: data.lockPeriodMonths,
         userId: data.userId, // walletAddress
-        token: data.token,
+        token: 'HICA',
       });
       return response.json();
     },
     onSuccess: () => {
       toast({
         title: 'Staking Successful!',
-        description: `Successfully staked ${calculationData?.amount} ${selectedToken} for ${calculationData?.lockPeriod} months.`,
+        description: `Successfully staked ${stakeAmount} HICA for ${lockPeriod[0]} months.`,
       });
+      setStakeAmount('');
       queryClient.invalidateQueries({ queryKey: ['userStakes', walletAddress] });
       queryClient.invalidateQueries({ queryKey: ['/api/users', walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ['userBalance', walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ['userBalance', walletAddress] });
     },
     onError: (error) => {
       toast({
@@ -98,7 +100,7 @@ export default function Stake() {
       return;
     }
 
-    if (!calculationData || !calculationData.amount || parseFloat(calculationData.amount) <= 0) {
+    if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
       toast({
         title: 'Invalid Amount',
         description: 'Please enter a valid stake amount.',
@@ -108,10 +110,9 @@ export default function Stake() {
     }
 
     stakeMutation.mutate({
-      amount: calculationData.amount,
-      lockPeriodMonths: calculationData.lockPeriod,
+      amount: stakeAmount,
+      lockPeriodMonths: lockPeriod[0],
       userId: walletAddress,
-      token: selectedToken,
     });
   };
 
@@ -128,6 +129,7 @@ export default function Stake() {
       });
       queryClient.invalidateQueries({ queryKey: ['userStakes', walletAddress] });
       queryClient.invalidateQueries({ queryKey: ['/api/users', walletAddress] });
+      queryClient.invalidateQueries({ queryKey: ['userBalance', walletAddress] });
     },
     onError: (error) => {
       toast({
@@ -138,21 +140,7 @@ export default function Stake() {
     },
   });
 
-  const handleUnstake = () => {
-    // For now, find the first unstakable stake - in real app, user would select
-    const unstakableStake = userStakes?.find((stake: any) => stake.canUnstake && stake.isActive);
-    
-    if (!unstakableStake) {
-      toast({
-        title: 'No Unstakable Stakes',
-        description: 'You have no stakes that can be unstaked at this time.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    unstakeMutation.mutate(unstakableStake.id);
-  };
+  // handleUnstake function removed - now handled per-item in unstake tab
 
   return (
     <div className="min-h-screen pt-24 pb-20">
@@ -161,49 +149,72 @@ export default function Stake() {
         <Card className="glass-card mb-8">
           <CardContent className="p-8">
             {/* Tabs */}
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid grid-cols-3 mb-8 bg-muted/20">
+            <Tabs defaultValue="stake" className="w-full">
+              <TabsList className="grid grid-cols-2 mb-8 bg-muted/20">
                 <TabsTrigger value="stake" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-stake">
                   <span className="text-lg">Stake</span>
                 </TabsTrigger>
-                <TabsTrigger value="boost" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-boost">
-                  <span className="text-lg">Boost</span>
-                </TabsTrigger>
-                <TabsTrigger value="balance" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-balance">
-                  <span className="text-lg">Balance</span>
+                <TabsTrigger value="unstake" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground" data-testid="tab-unstake">
+                  <span className="text-lg">Unstake</span>
                 </TabsTrigger>
               </TabsList>
 
               <TabsContent value="stake" className="space-y-6">
                 {/* Balance Display */}
                 <div className="text-center mb-8">
-                  <div className="text-6xl font-bold text-muted-foreground mb-2">
+                  <div className="text-6xl font-bold text-muted-foreground mb-2" data-testid="balance-amount">
                     {userBalance?.balance || 0}
                   </div>
                   <div className="text-xl text-muted-foreground">
                     $ {userBalance?.usdValue || '0.00'}
                   </div>
+                  <div className="text-sm text-muted-foreground mt-2">HICA</div>
                 </div>
 
-                {/* Token Selector */}
-                <div className="flex justify-center mb-6">
-                  <Select value={selectedToken} onValueChange={setSelectedToken}>
-                    <SelectTrigger className="w-32 bg-muted/20 border-border" data-testid="select-token">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-gradient-to-r from-primary to-secondary rounded-full"></div>
-                        <SelectValue />
-                        <ChevronDown className="w-4 h-4" />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      <SelectItem value="HICA" data-testid="token-option-hica">HICA</SelectItem>
-                      <SelectItem value="ETH" data-testid="token-option-eth">ETH</SelectItem>
-                      <SelectItem value="USDT" data-testid="token-option-usdt">USDT</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* Stake Amount Input */}
+                <div className="space-y-4 mb-6">
+                  <Label htmlFor="stake-amount" className="text-lg font-semibold">Stake Amount</Label>
+                  <Input
+                    id="stake-amount"
+                    type="number"
+                    placeholder="Enter amount to stake"
+                    value={stakeAmount}
+                    onChange={(e) => setStakeAmount(e.target.value)}
+                    className="text-center text-2xl h-16 bg-muted/20 border-border"
+                    data-testid="input-stake-amount"
+                  />
                 </div>
 
-                {/* Connect/Action Button */}
+                {/* Lock Period Slider */}
+                <div className="space-y-4 mb-6">
+                  <Label className="text-lg font-semibold">Lock Period: {lockPeriod[0]} months ({Math.floor(lockPeriod[0] / 12)} year{Math.floor(lockPeriod[0] / 12) !== 1 ? 's' : ''})</Label>
+                  <Slider
+                    value={lockPeriod}
+                    onValueChange={setLockPeriod}
+                    min={12}
+                    max={24}
+                    step={12}
+                    className="w-full"
+                    data-testid="slider-lock-period"
+                  />
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>1 year</span>
+                    <span>2 years</span>
+                  </div>
+                </div>
+
+                {/* Reward Calculation */}
+                <div className="text-center mb-8 p-4 bg-muted/10 rounded-lg">
+                  <div className="text-sm text-muted-foreground mb-2">Estimated Rewards</div>
+                  <div className="text-2xl font-bold text-primary" data-testid="estimated-rewards">
+                    {calculateRewards().toLocaleString()} HICA
+                  </div>
+                  <div className="text-sm text-muted-foreground mt-1">
+                    APY: {calculateAPY(lockPeriod[0])}% monthly
+                  </div>
+                </div>
+
+                {/* Connect/Stake Button */}
                 <div className="flex justify-center mb-8">
                   {!isConnected ? (
                     <Button
@@ -214,114 +225,77 @@ export default function Stake() {
                       Connect
                     </Button>
                   ) : (
-                    <div className="space-y-4 w-full">
-                      <Button
-                        onClick={handleStake}
-                        disabled={stakeMutation.isPending}
-                        className="neon-button w-full py-4 rounded-xl text-lg font-bold"
-                        data-testid="button-stake-tokens"
-                      >
-                        {stakeMutation.isPending ? 'Staking...' : 'Stake Tokens'}
-                      </Button>
-                      <Button
-                        onClick={handleUnstake}
-                        disabled={unstakeMutation.isPending || !userStakes?.some((stake: any) => stake.canUnstake && stake.isActive)}
-                        variant="outline"
-                        className="w-full py-4 rounded-xl text-lg font-bold border-primary/50 hover:border-primary"
-                        data-testid="button-unstake-tokens"
-                      >
-                        {unstakeMutation.isPending ? 'Unstaking...' : 'Unstake'}
-                      </Button>
-                    </div>
+                    <Button
+                      onClick={handleStake}
+                      disabled={stakeMutation.isPending || !stakeAmount || parseFloat(stakeAmount) <= 0}
+                      className="neon-button w-full py-4 rounded-xl text-lg font-bold"
+                      data-testid="button-stake-tokens"
+                    >
+                      {stakeMutation.isPending ? 'Staking...' : 'Stake HICA'}
+                    </Button>
                   )}
                 </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-3 gap-6 pt-4 border-t border-border">
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Monthly percentage yield</div>
-                    <div className="text-lg font-bold text-primary" data-testid="stat-apy">
-                      {stakingStats?.apy.min}% - {stakingStats?.apy.max}%
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Total value locked</div>
-                    <div className="text-lg font-bold" data-testid="stat-tvl">
-                      {stakingStats?.totalValueLocked} {selectedToken}
-                    </div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-sm text-muted-foreground mb-1">Stakers</div>
-                    <div className="text-lg font-bold" data-testid="stat-stakers">
-                      {stakingStats?.totalStakers}
-                    </div>
-                  </div>
-                </div>
               </TabsContent>
 
-              <TabsContent value="boost" className="text-center py-8">
-                <div className="text-muted-foreground">Boost features coming soon...</div>
-              </TabsContent>
-
-              <TabsContent value="balance" className="text-center py-8">
-                <div className="text-muted-foreground">Balance details coming soon...</div>
+              <TabsContent value="unstake" className="space-y-6">
+                {!isConnected ? (
+                  <div className="text-center py-8">
+                    <Button
+                      onClick={connect}
+                      className="neon-button px-32 py-4 rounded-xl text-lg font-bold"
+                      data-testid="button-connect-wallet-unstake"
+                    >
+                      Connect Wallet
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    {/* Active Stakes List */}
+                    {userStakes && userStakes.length > 0 ? (
+                      <div className="space-y-4">
+                        <h3 className="text-xl font-bold text-center mb-6">Your Active Stakes</h3>
+                        {userStakes.map((stake: any) => (
+                          <div key={stake.id} className="p-4 bg-muted/10 rounded-lg border border-border" data-testid={`stake-item-${stake.id}`}>
+                            <div className="flex justify-between items-center mb-2">
+                              <span className="font-semibold">{parseFloat(stake.amount).toLocaleString()} HICA</span>
+                              <span className={`px-2 py-1 rounded text-xs ${stake.isActive ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
+                                {stake.isActive ? 'Active' : 'Completed'}
+                              </span>
+                            </div>
+                            <div className="text-sm text-muted-foreground mb-3">
+                              Lock Period: {stake.lockPeriodMonths} months • APY: {stake.apy || calculateAPY(stake.lockPeriodMonths)}%
+                            </div>
+                            {stake.canUnstake && stake.isActive && (
+                              <Button
+                                onClick={() => unstakeMutation.mutate(stake.id)}
+                                disabled={unstakeMutation.isPending}
+                                variant="outline"
+                                className="w-full py-2 border-primary/50 hover:border-primary"
+                                data-testid={`button-unstake-${stake.id}`}
+                              >
+                                {unstakeMutation.isPending ? 'Unstaking...' : 'Unstake'}
+                              </Button>
+                            )}
+                            {!stake.canUnstake && stake.isActive && (
+                              <div className="text-center text-sm text-muted-foreground">
+                                Cannot unstake yet - lock period not completed
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-8">
+                        <div className="text-muted-foreground mb-4">No active stakes found</div>
+                        <div className="text-sm text-muted-foreground">Start staking to see your stakes here</div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
-
-        {/* Reward Calculator Section */}
-        <Card className="glass-card mb-8">
-          <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center">
-              <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                Reward Calculator
-              </span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <StakingCalculator onCalculationChange={setCalculationData} />
-          </CardContent>
-        </Card>
-
-        {/* Staking Benefits */}
-        <div className="grid md:grid-cols-3 gap-6">
-          <Card className="glass-card text-center">
-            <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center">
-                <i className="fas fa-shield-alt text-white text-2xl"></i>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Secure & Reliable</h3>
-              <p className="text-muted-foreground text-sm">
-                Your staked tokens are secured by smart contracts with emergency unstake protection.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card text-center">
-            <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-secondary to-accent rounded-full flex items-center justify-center">
-                <i className="fas fa-chart-line text-white text-2xl"></i>
-              </div>
-              <h3 className="text-xl font-bold mb-2">High Returns</h3>
-              <p className="text-muted-foreground text-sm">
-                Earn up to 15% monthly returns based on your lock period and referral network.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="glass-card text-center">
-            <CardContent className="p-6">
-              <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-accent to-primary rounded-full flex items-center justify-center">
-                <i className="fas fa-users text-white text-2xl"></i>
-              </div>
-              <h3 className="text-xl font-bold mb-2">Referral Bonuses</h3>
-              <p className="text-muted-foreground text-sm">
-                Build your network and earn additional rewards from your referral tree.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </div>
   );
