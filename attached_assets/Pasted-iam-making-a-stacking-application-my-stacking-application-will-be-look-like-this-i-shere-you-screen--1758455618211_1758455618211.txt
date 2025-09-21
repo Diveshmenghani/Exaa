@@ -1,0 +1,88 @@
+iam making a stacking application my stacking application will be look like this i shere you screen shot add lending page and then lunch app and i have referal system also so add the calculatore you see in front of stake amount and how much you refered then you got this much apy and in the staking page put the register page stake page and unstake page and a page where user can see there profile how many team is expand in there referal system and calculate the reward how much they errand and clamable fuunction my website name hicapera  and my landing page and stcking page will be same theme use javascript not typescript and make sure made function like i connect with the smart contract this is my contract so understand what function you have to add or not  Token Swapping (from HicaSwap.sol)
+buyTokens()
+
+Button Text: "Buy HICA"
+
+What it does: Allows the user to swap their USDT for your project's HICA token at a fixed 1:1 price.
+
+sellTokens()
+
+Button Text: "Sell HICA"
+
+What it does: Allows the user to swap their HICA token back into USDT at a fixed 1:1 price.                                                   taking Platform (from HicaStaking.sol)
+register()
+
+Button Text: "Register Account"
+
+What it does: This is the first step for a new user to join the platform, linking them to a referrer (or the project owner if no referrer is specified).
+
+stake()
+
+Button Text: "Stake Tokens"
+
+What it does: The main function for users to lock their HICA tokens into the contract to start earning rewards. The user would need input fields for the amount and the lock-in period (1, 2, or 3 years).
+
+unstake()
+
+Button Text: "Unstake"
+
+What it does: Allows a user to withdraw one of their specific stakes after its lock-in period has expired. You will need to show the user a list of their stakes so they can choose which one to unstake.
+
+claimReferralReward()
+
+Button Text: "Claim Referral Rewards"
+
+What it does: Allows a user to withdraw the HICA tokens they have earned from their downline's activity.
+
+emergencyUnstake()
+
+Button Text: "Emergency Withdraw"
+
+What it does: A crucial safety button that should only become active if the contract has been paused by the owner. It allows users to get their principal staked tokens back in an emergency.
+
+Approval Function (from the ERC20 Token Standard)
+approve()
+
+Button Text: "Approve HICA"
+
+What it does: This is a necessary, one-time (or infrequent) step. Before a user can stake or sell their tokens, they must first click this button to give your smart contracts permission to handle their HICA tokens. This button should appear before the "Stake" or "Sell" buttons are enabled.                                                                                          Design and develop a modern, aesthetically pleasing, and highly functional website that incorporates the following cutting-edge features and design philosophies from 2025:
+
+Hyper Colors 🌈 Vibrant Aesthetic: Utilize a palette of highly saturated colors, balanced with bolder and darker text for contrast.
+Interactive Elements: Implement hyper colors in interactive elements and call-to-actions to make them stand out.
+
+Seamless Transitions: Integrate background color changes as the user scrolls, creating seamless and unique section transitions.
+
+Gen Z Design Principles 🚀 Unique Layouts: Embrace overlapping elements, unique typography, and varied section heights that don't adhere to traditional web design norms.
+Expressive Interactions: Incorporate unexpected hover effects and animations, such as images blocked by hover cards or elements connected by sticky notes.
+
+Functionality & Visuals: Present familiar functionalities in visually novel ways, like floating buttons for case studies.
+
+Non-Traditional Footer: Consider a footer design that is unique and expressive, potentially resembling a table of contents.
+
+Full-Screen Video Integration 🎬 Engaging Visuals: Utilize high-quality, full-screen videos for hero sections and throughout the website to immediately capture user attention and showcase work.
+Video-Driven Transitions: Employ videos for transitions between sections and over case studies.
+
+Interactive Video Elements: Integrate looping full-screen videos and ensure they are engaging, emotive, and action-oriented.
+
+Advanced Mouse Interactions 🖱️ Dynamic Cursors: Implement custom mouse cursors with cool effects as users hover over elements.
+Responsive Graphics: Incorporate high-resolution graphics that follow the mouse cursor in a responsive and bouncy manner.
+
+Contextual Previews: Include small previews or elements that follow the mouse, such as case study previews, without interfering with central text.
+
+Seamless Background Changes: Integrate background changes and dynamic content updates tied to mouse interactions as users scroll.
+
+Creative Scroll Design ↕️ Horizontal & Vertical Scroll: Experiment with combinations of horizontal and vertical scrolling to create unique user journeys.
+Scroll-Triggered Animations: Tie animation sequences to scroll events, where elements change as the user progresses down the page.
+
+Parallax & Fixed Backgrounds: Utilize subtle parallax effects or fixed backgrounds with moving foreground elements.
+
+Dynamic Transitions: Implement page transitions where backgrounds change while central text remains fixed, or image swaps linked to scroll actions.
+
+Immersive 3D Elements 🧊 Interactive 3D: Integrate 3D elements that are connected to scroll events, creating a sense of state-of-the-art technology.
+Creative Placement: Experiment with novel ways to utilize 3D elements within a 2D browser space, such as orbiting case studies around a 3D cube.
+
+Animated Interactions: Add interactive 3D animations, like team members dancing on hover in the footer.
+
+Stylized Graphics & Transitions: Incorporate stylized 3D graphics (e.g., a 3D Game Boy) and cool 3D page transitions that skew or zoom.
+
+The goal is to create a website that is not only visually striking but also offers a highly engaging and memorable user experience through innovative design and interaction.
