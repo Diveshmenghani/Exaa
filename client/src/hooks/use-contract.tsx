@@ -22,6 +22,7 @@ interface ContractContextType {
   addReferrer: (referrer: string) => Promise<boolean>;
   getUserInfo: (address: string) => Promise<any>;
   approveTokens: (amount: string) => Promise<boolean>;
+  approveAndStake: (amount: string, lockYears: number, referrer: string) => Promise<boolean>;
   // Swap contract functions
   buyTokens: (usdtAmount: string, deadline: number) => Promise<boolean>;
   sellTokens: (exaaAmount: string, deadline: number) => Promise<boolean>;
@@ -112,6 +113,91 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     initializeContracts();
   }, [signer, isConnected, isHoleskyNetwork, switchToHoleskyNetwork]);
 
+  // Combined approve and stake function
+  const approveAndStake = async (amount: string, lockYears: number, referrer: string): Promise<boolean> => {
+    if (!tokenContract || !stakingContract || !isConnected) {
+      setError('Wallet not connected or contracts not initialized');
+      return false;
+    }
+
+    // Ensure we're on Holesky network
+    if (!isHoleskyNetwork) {
+      try {
+        const switched = await switchToHoleskyNetwork();
+        if (!switched) {
+          setError('Please switch to Holesky testnet to stake tokens');
+          return false;
+        }
+      } catch (err: any) {
+        console.error('Error switching to Holesky:', err);
+        setError('Failed to switch to Holesky testnet');
+        return false;
+      }
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Validate and format amount
+      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+        setError('Invalid amount');
+        setIsLoading(false);
+        return false;
+      }
+      
+      // Convert string amount to Wei (proper format for contract)
+      const amountInWei = ethers.utils.parseEther(amount.toString().trim());
+      
+      // Validate lock period (must be positive integer)
+      if (!Number.isInteger(lockYears) || lockYears <= 0) {
+        setError('Lock period must be a positive integer');
+        setIsLoading(false);
+        return false;
+      }
+      
+      // Ensure referrer address is valid
+      const formattedReferrer = referrer && referrer !== '0x0000000000000000000000000000000000000000' 
+        ? ethers.utils.getAddress(referrer) // Normalize address format
+        : '0x0000000000000000000000000000000000000000';
+      
+      console.log('Approving tokens:', {
+        amount: amount,
+        amountInWei: amountInWei.toString(),
+        stakingContract: EXAA_STAKING_ADDRESS
+      });
+      
+      // First approve tokens
+      const approveTx = await tokenContract.approve(EXAA_STAKING_ADDRESS, amountInWei);
+      await approveTx.wait();
+      
+      console.log('Tokens approved, now staking with parameters:', {
+        amount: amount,
+        amountInWei: amountInWei.toString(),
+        lockYears: lockYears,
+        referrer: formattedReferrer
+      });
+      
+      // Then stake tokens
+      const stakeTx = await stakingContract.stake(amountInWei, lockYears, formattedReferrer);
+      await stakeTx.wait();
+      
+      setIsLoading(false);
+      return true;
+    } catch (err: any) {
+      console.error('Error in approve and stake process:', err);
+      
+      // Check if user rejected transaction
+      if (err.code === 4001 || err.message?.includes('user rejected')) {
+        setError('Transaction was cancelled by user');
+      } else {
+        setError(err.message || 'Failed to complete staking process');
+      }
+      
+      setIsLoading(false);
+      return false;
+    }
+  };
+
   // Approve tokens for staking on Holesky testnet
   const approveTokens = async (amount: string): Promise<boolean> => {
     if (!tokenContract || !isConnected) {
@@ -136,7 +222,23 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
 
     try {
       setIsLoading(true);
-      const amountInWei = ethers.utils.parseEther(amount);
+      
+      // Validate amount
+      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+        setError('Invalid token amount for approval');
+        setIsLoading(false);
+        return false;
+      }
+      
+      // Convert to Wei (proper format for contract)
+      const amountInWei = ethers.utils.parseEther(amount.toString().trim());
+      
+      console.log('Approving tokens:', {
+        amount: amount,
+        amountInWei: amountInWei.toString(),
+        stakingContract: EXAA_STAKING_ADDRESS
+      });
+      
       const tx = await tokenContract.approve(EXAA_STAKING_ADDRESS, amountInWei);
       await tx.wait();
       setIsLoading(false);
@@ -173,8 +275,37 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
 
     try {
       setIsLoading(true);
-      const amountInWei = ethers.utils.parseEther(amount);
-      const tx = await stakingContract.stake(amountInWei, lockYears, referrer);
+      
+      // Validate and format amount
+      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+        setError('Invalid stake amount');
+        setIsLoading(false);
+        return false;
+      }
+      
+      // Convert string amount to Wei (proper format for contract)
+      const amountInWei = ethers.utils.parseEther(amount.toString().trim());
+      
+      // Validate lock period (must be positive integer)
+      if (!Number.isInteger(lockYears) || lockYears <= 0) {
+        setError('Lock period must be a positive integer');
+        setIsLoading(false);
+        return false;
+      }
+      
+      // Ensure referrer address is valid
+      const formattedReferrer = referrer && referrer !== '0x0000000000000000000000000000000000000000' 
+        ? ethers.utils.getAddress(referrer) // Normalize address format
+        : '0x0000000000000000000000000000000000000000';
+      
+      console.log('Staking with parameters:', {
+        amount: amount,
+        amountInWei: amountInWei.toString(),
+        lockYears: lockYears,
+        referrer: formattedReferrer
+      });
+      
+      const tx = await stakingContract.stake(amountInWei, lockYears, formattedReferrer);
       await tx.wait();
       setIsLoading(false);
       return true;
@@ -366,6 +497,7 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
         addReferrer,
         getUserInfo,
         approveTokens,
+        approveAndStake,
         buyTokens,
         sellTokens,
         approveUSDT,

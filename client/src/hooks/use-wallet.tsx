@@ -137,13 +137,19 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
 
   const connect = async () => {
     try {
+      // Check if MetaMask is installed
       if (!window.ethereum) {
-        alert('Please install MetaMask or another Ethereum wallet extension!');
+        alert('Please install MetaMask wallet extension!');
         return;
       }
 
-      const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
+      // Force MetaMask to be used as the provider
+      const web3Provider = new ethers.providers.Web3Provider(window.ethereum, 'any');
+      
+      // Request account access
+      await window.ethereum.request({ 
+        method: 'eth_requestAccounts',
+      });
       
       const web3Signer = web3Provider.getSigner();
       const address = await web3Signer.getAddress();

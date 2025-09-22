@@ -14,7 +14,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 export default function Stake() {
   const { toast } = useToast();
   const { walletAddress, isConnected, connect } = useWallet();
-  const { stake, approveTokens, isLoading, error } = useContract();
+  const { stake, approveTokens, approveAndStake, isLoading, error } = useContract();
   const [stakeAmount, setStakeAmount] = useState('');
   const [lockPeriod, setLockPeriod] = useState([12]); // Slider uses array format
   const [referrerAddress, setReferrerAddress] = useState('');
@@ -22,6 +22,7 @@ export default function Stake() {
 
   // Calculate APY based on lock period
   const calculateAPY = (months: number) => {
+    if (months >= 36) return 18; // 3 years = 18%
     if (months >= 24) return 15; // 2 years = 15%
     if (months >= 12) return 12; // 1 year = 12%
     return 10; // Less than 1 year = 10%
@@ -57,7 +58,12 @@ export default function Stake() {
     queryKey: ['userStakes', walletAddress],
     queryFn: async () => {
       const response = await apiRequest('GET', `/api/stakes/user/${walletAddress}`);
-      return response.json();
+      const data = await response.json();
+      // Add hasReferrer property based on existing data
+      return {
+        ...data,
+        hasReferrer: data.referrer && data.referrer !== '0x0000000000000000000000000000000000000000'
+      };
     },
     enabled: !!walletAddress
   });
@@ -66,19 +72,11 @@ export default function Stake() {
 
   const stakeMutation = useMutation({
     mutationFn: async (data: { amount: string; lockYears: number; referrer: string }) => {
-      // First approve tokens
-      setIsApproving(true);
-      const approved = await approveTokens(data.amount);
-      setIsApproving(false);
+      // Use the combined approveAndStake function
+      const success = await approveAndStake(data.amount, data.lockYears, data.referrer);
       
-      if (!approved) {
-        throw new Error('Failed to approve tokens for staking');
-      }
-      
-      // Then stake tokens
-      const success = await stake(data.amount, data.lockYears, data.referrer);
       if (!success) {
-        throw new Error('Failed to stake tokens');
+        throw new Error('Failed to complete staking process');
       }
       
       return { success: true };
@@ -114,10 +112,11 @@ export default function Stake() {
       return;
     }
     
-    if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
+    // Validate stake amount (must be a positive number)
+    if (!stakeAmount || isNaN(Number(stakeAmount)) || Number(stakeAmount) <= 0) {
       toast({
         title: 'Invalid Amount',
-        description: 'Please enter a valid stake amount.',
+        description: 'Please enter a valid stake amount (must be a positive number).',
         variant: 'destructive',
       });
       return;
@@ -126,11 +125,43 @@ export default function Stake() {
     // Convert months to years for the contract (rounding up)
     const lockYears = Math.ceil(lockPeriod[0] / 12);
     
-    // Use empty address if no referrer provided
-    const referrer = referrerAddress || '0x0000000000000000000000000000000000000000';
+    // Validate lock period (must be at least 1 month)
+    if (lockPeriod[0] < 1) {
+      toast({
+        title: 'Invalid Lock Period',
+        description: 'Lock period must be at least 1 month.',
+        variant: 'destructive',
+      });
+      return;
+    }
     
+    // Validate referrer address if provided
+    let referrer = '0x0000000000000000000000000000000000000000';
+    if (referrerAddress) {
+      try {
+        // Check if it's a valid Ethereum address
+        if (!/^0x[a-fA-F0-9]{40}$/.test(referrerAddress)) {
+          toast({
+            title: 'Invalid Referrer Address',
+            description: 'Please enter a valid Ethereum address or leave it empty.',
+            variant: 'destructive',
+          });
+          return;
+        }
+        referrer = referrerAddress;
+      } catch (error) {
+        toast({
+          title: 'Invalid Referrer Address',
+          description: 'Please enter a valid Ethereum address or leave it empty.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+    
+    // All validations passed, proceed with staking
     stakeMutation.mutate({
-      amount: stakeAmount,
+      amount: stakeAmount.trim(),
       lockYears: lockYears,
       referrer: referrer
     });
@@ -200,20 +231,8 @@ export default function Stake() {
                     placeholder="Enter amount to stake"
                     value={stakeAmount}
                     onChange={(e) => setStakeAmount(e.target.value)}
-                    className="text-center text-2xl h-16 bg-muted/20 border-border"
+                    className="text-center text-2xl h-16 bg-white/90 dark:bg-gray-800 border-2 border-primary/50 focus:border-primary"
                     data-testid="input-stake-amount"
-                  />
-                </div>
-                
-                {/* Referrer Address Input */}
-                <div className="space-y-4 mb-6">
-                  <Label htmlFor="referrer" className="text-lg font-semibold">Referrer Address (Optional)</Label>
-                  <Input
-                    id="referrer"
-                    placeholder="Enter referrer address"
-                    value={referrerAddress}
-                    onChange={(e) => setReferrerAddress(e.target.value)}
-                    className="text-center h-16 bg-muted/20 border-border"
                   />
                 </div>
 
@@ -224,7 +243,7 @@ export default function Stake() {
                     value={lockPeriod}
                     onValueChange={setLockPeriod}
                     min={12}
-                    max={24}
+                    max={36}
                     step={12}
                     className="w-full"
                     data-testid="slider-lock-period"
@@ -232,39 +251,61 @@ export default function Stake() {
                   <div className="flex justify-between text-sm text-muted-foreground">
                     <span>1 year</span>
                     <span>2 years</span>
+                    <span>3 years</span>
                   </div>
                 </div>
 
                 {/* Reward Calculation */}
-                <div className="text-center mb-8 p-4 bg-muted/10 rounded-lg">
-                  <div className="text-sm text-muted-foreground mb-2">Estimated Rewards</div>
+                <div className="text-center mb-8 p-4 bg-primary/10 rounded-lg border border-primary/30">
+                  <div className="text-sm font-medium mb-2">Estimated Rewards</div>
                   <div className="text-2xl font-bold text-primary" data-testid="estimated-rewards">
                     {calculateRewards().toLocaleString()} HICA
                   </div>
-                  <div className="text-sm text-muted-foreground mt-1">
-                    APY: {calculateAPY(lockPeriod[0])}% monthly
+                  <div className="text-sm font-medium mt-1">
+                    APY: <span className="text-primary font-bold">{calculateAPY(lockPeriod[0])}%</span> monthly
                   </div>
                 </div>
 
-                {/* Connect/Stake Button */}
-                <div className="flex justify-center mb-8">
+                {/* Connect/Stake Button with Conditional Referral */}
+                <div className="mb-8">
                   {!isConnected ? (
-                    <Button
-                      onClick={connect}
-                      className="neon-button px-32 py-4 rounded-xl text-lg font-bold"
-                      data-testid="button-connect-wallet"
-                    >
-                      Connect
-                    </Button>
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={connect}
+                        className="neon-button px-32 py-4 rounded-xl text-lg font-bold"
+                        data-testid="button-connect-wallet"
+                      >
+                        Connect
+                      </Button>
+                    </div>
                   ) : (
-                    <Button
-                      onClick={handleStake}
-                      disabled={stakeMutation.isPending || !stakeAmount || parseFloat(stakeAmount) <= 0}
-                      className="neon-button w-full py-4 rounded-xl text-lg font-bold"
-                      data-testid="button-stake-tokens"
-                    >
-                      {stakeMutation.isPending ? 'Staking...' : 'Stake HICA'}
-                    </Button>
+                    <div className="space-y-4">
+                      {/* Conditional Referral Input - Only show if user doesn't have a referrer */}
+                      {!userStakes?.hasReferrer && (
+                        <div className="p-4 bg-primary/10 rounded-lg border border-primary/30 mb-4">
+                          <Label htmlFor="referrer" className="text-sm font-medium mb-2 block">Add Referrer (Optional)</Label>
+                          <div className="flex gap-2">
+                            <Input
+                              id="referrer"
+                              placeholder="Enter referrer address"
+                              value={referrerAddress}
+                              onChange={(e) => setReferrerAddress(e.target.value)}
+                              className="flex-1 h-10 bg-white/90 dark:bg-gray-800 border-primary/30"
+                            />
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Stake Button */}
+                      <Button
+                        onClick={handleStake}
+                        disabled={stakeMutation.isPending || !stakeAmount || parseFloat(stakeAmount) <= 0}
+                        className="neon-button w-full py-4 rounded-xl text-lg font-bold"
+                        data-testid="button-stake-tokens"
+                      >
+                        {stakeMutation.isPending ? 'Staking...' : 'Stake HICA'}
+                      </Button>
+                    </div>
                   )}
                 </div>
               </TabsContent>
