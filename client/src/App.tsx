@@ -4,6 +4,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WalletProvider } from "@/hooks/use-wallet";
+import { ContractProvider } from "@/hooks/use-contract";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Swap from "@/pages/swap";
@@ -35,13 +36,15 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <WalletProvider>
-        <TooltipProvider>
-          <CustomCursor />
-          <ParticleBackground />
-          <ScrollIndicator />
-          <Toaster />
-          <Router />
-        </TooltipProvider>
+        <ContractProvider>
+          <TooltipProvider>
+            <CustomCursor />
+            <ParticleBackground />
+            <ScrollIndicator />
+            <Toaster />
+            <Router />
+          </TooltipProvider>
+        </ContractProvider>
       </WalletProvider>
     </QueryClientProvider>
   );

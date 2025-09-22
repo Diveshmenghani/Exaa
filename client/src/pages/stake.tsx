@@ -7,14 +7,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
+import { useContract } from '@/hooks/use-contract';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 
 export default function Stake() {
   const { toast } = useToast();
   const { walletAddress, isConnected, connect } = useWallet();
+  const { stake, approveTokens, isLoading, error } = useContract();
   const [stakeAmount, setStakeAmount] = useState('');
   const [lockPeriod, setLockPeriod] = useState([12]); // Slider uses array format
+  const [referrerAddress, setReferrerAddress] = useState('');
+  const [isApproving, setIsApproving] = useState(false);
 
   // Calculate APY based on lock period
   const calculateAPY = (months: number) => {
@@ -61,30 +65,39 @@ export default function Stake() {
   // Remove stakingStats query - no longer needed
 
   const stakeMutation = useMutation({
-    mutationFn: async (data: { amount: string; lockPeriodMonths: number; userId: string }) => {
-      const response = await apiRequest('POST', '/api/stakes', {
-        amount: data.amount,
-        lockPeriodMonths: data.lockPeriodMonths,
-        userId: data.userId, // walletAddress
-        token: 'HICA',
-      });
-      return response.json();
+    mutationFn: async (data: { amount: string; lockYears: number; referrer: string }) => {
+      // First approve tokens
+      setIsApproving(true);
+      const approved = await approveTokens(data.amount);
+      setIsApproving(false);
+      
+      if (!approved) {
+        throw new Error('Failed to approve tokens for staking');
+      }
+      
+      // Then stake tokens
+      const success = await stake(data.amount, data.lockYears, data.referrer);
+      if (!success) {
+        throw new Error('Failed to stake tokens');
+      }
+      
+      return { success: true };
     },
     onSuccess: () => {
       toast({
         title: 'Staking Successful!',
-        description: `Successfully staked ${stakeAmount} HICA for ${lockPeriod[0]} months.`,
+        description: `Successfully staked ${stakeAmount} HICA for ${Math.ceil(lockPeriod[0]/12)} years.`,
       });
       setStakeAmount('');
+      setReferrerAddress('');
       queryClient.invalidateQueries({ queryKey: ['userStakes', walletAddress] });
       queryClient.invalidateQueries({ queryKey: ['/api/users', walletAddress] });
       queryClient.invalidateQueries({ queryKey: ['userBalance', walletAddress] });
-      queryClient.invalidateQueries({ queryKey: ['userBalance', walletAddress] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
       toast({
         title: 'Staking Failed',
-        description: error.message,
+        description: error.message || 'An error occurred while staking',
         variant: 'destructive',
       });
     },
@@ -97,9 +110,10 @@ export default function Stake() {
         description: 'Please connect your wallet to proceed.',
         variant: 'destructive',
       });
+      connect();
       return;
     }
-
+    
     if (!stakeAmount || parseFloat(stakeAmount) <= 0) {
       toast({
         title: 'Invalid Amount',
@@ -108,11 +122,17 @@ export default function Stake() {
       });
       return;
     }
-
+    
+    // Convert months to years for the contract (rounding up)
+    const lockYears = Math.ceil(lockPeriod[0] / 12);
+    
+    // Use empty address if no referrer provided
+    const referrer = referrerAddress || '0x0000000000000000000000000000000000000000';
+    
     stakeMutation.mutate({
       amount: stakeAmount,
-      lockPeriodMonths: lockPeriod[0],
-      userId: walletAddress,
+      lockYears: lockYears,
+      referrer: referrer
     });
   };
 
@@ -182,6 +202,18 @@ export default function Stake() {
                     onChange={(e) => setStakeAmount(e.target.value)}
                     className="text-center text-2xl h-16 bg-muted/20 border-border"
                     data-testid="input-stake-amount"
+                  />
+                </div>
+                
+                {/* Referrer Address Input */}
+                <div className="space-y-4 mb-6">
+                  <Label htmlFor="referrer" className="text-lg font-semibold">Referrer Address (Optional)</Label>
+                  <Input
+                    id="referrer"
+                    placeholder="Enter referrer address"
+                    value={referrerAddress}
+                    onChange={(e) => setReferrerAddress(e.target.value)}
+                    className="text-center h-16 bg-muted/20 border-border"
                   />
                 </div>
 
