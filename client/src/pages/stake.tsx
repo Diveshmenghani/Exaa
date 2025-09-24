@@ -3,7 +3,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
@@ -18,7 +17,7 @@ export default function Stake() {
   const [stakeAmount, setStakeAmount] = useState('');
   const [lockPeriod, setLockPeriod] = useState([12]); // Slider uses array format
   const [referrerAddress, setReferrerAddress] = useState('');
-  const [isApproving, setIsApproving] = useState(false);
+  const [isEditingAmount, setIsEditingAmount] = useState(false);
 
   // Calculate APY based on lock period
   const calculateAPY = (months: number) => {
@@ -212,9 +211,10 @@ export default function Stake() {
 
               <TabsContent value="stake" className="space-y-6">
                 {/* Balance Display */}
-                <div className="text-center mb-8">
-                  <div className="text-6xl font-bold text-muted-foreground mb-2" data-testid="balance-amount">
-                    {userBalance?.balance || 0}
+                <div className="text-center mb-8 cursor-pointer" onClick={() => setIsEditingAmount(true)}>
+                  <div className="text-sm text-muted-foreground mb-2">Available Balance</div>
+                  <div className="text-6xl font-bold text-primary mb-2" data-testid="balance-amount">
+                    {userBalance?.balance?.toLocaleString() || 0}
                   </div>
                   <div className="text-xl text-muted-foreground">
                     $ {userBalance?.usdValue || '0.00'}
@@ -222,36 +222,75 @@ export default function Stake() {
                   <div className="text-sm text-muted-foreground mt-2">HICA</div>
                 </div>
 
-                {/* Stake Amount Input */}
-                <div className="space-y-4 mb-6">
-                  <Label htmlFor="stake-amount" className="text-lg font-semibold">Stake Amount</Label>
-                  <Input
-                    id="stake-amount"
-                    type="number"
-                    placeholder="Enter amount to stake"
-                    value={stakeAmount}
-                    onChange={(e) => setStakeAmount(e.target.value)}
-                    className="text-center text-2xl h-16 bg-white/90 dark:bg-gray-800 border-2 border-primary/50 focus:border-primary"
-                    data-testid="input-stake-amount"
-                  />
+                {/* Stake Amount Display/Input */}
+                <div className="text-center mb-8 p-6 bg-primary/10 rounded-xl border border-primary/30">
+                  <div className="text-sm font-medium mb-2">Amount to Stake</div>
+                  {isEditingAmount ? (
+                    <div className="flex items-center justify-center space-x-2">
+                      <input
+                        type="number"
+                        placeholder="Enter amount"
+                        value={stakeAmount}
+                        onChange={(e) => setStakeAmount(e.target.value)}
+                        onBlur={() => setIsEditingAmount(false)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            setIsEditingAmount(false);
+                          }
+                        }}
+                        className="text-4xl font-bold text-center bg-transparent border-none outline-none text-primary w-64"
+                        data-testid="input-stake-amount"
+                        autoFocus
+                      />
+                      <span className="text-2xl text-muted-foreground">HICA</span>
+                    </div>
+                  ) : (
+                    <div 
+                      className="text-4xl font-bold text-primary cursor-pointer hover:text-primary/80 transition-colors"
+                      onClick={() => setIsEditingAmount(true)}
+                      data-testid="display-stake-amount"
+                    >
+                      {stakeAmount || '0'} <span className="text-2xl text-muted-foreground">HICA</span>
+                    </div>
+                  )}
+                  <div className="text-sm text-muted-foreground mt-2">Click to edit amount</div>
                 </div>
 
                 {/* Lock Period Slider */}
-                <div className="space-y-4 mb-6">
-                  <Label className="text-lg font-semibold">Lock Period: {lockPeriod[0]} months ({Math.floor(lockPeriod[0] / 12)} year{Math.floor(lockPeriod[0] / 12) !== 1 ? 's' : ''})</Label>
-                  <Slider
-                    value={lockPeriod}
-                    onValueChange={setLockPeriod}
-                    min={12}
-                    max={36}
-                    step={12}
-                    className="w-full"
-                    data-testid="slider-lock-period"
-                  />
-                  <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>1 year</span>
-                    <span>2 years</span>
-                    <span>3 years</span>
+                <div className="space-y-6 mb-8 p-6 bg-muted/10 rounded-xl">
+                  <div className="text-center">
+                    <Label className="text-lg font-semibold block mb-2">
+                      Lock Period: {lockPeriod[0]} months
+                    </Label>
+                    <div className="text-2xl font-bold text-secondary mb-4">
+                      {Math.floor(lockPeriod[0] / 12)} Year{Math.floor(lockPeriod[0] / 12) !== 1 ? 's' : ''}
+                    </div>
+                  </div>
+                  
+                  <div className="px-4">
+                    <Slider
+                      value={lockPeriod}
+                      onValueChange={setLockPeriod}
+                      min={12}
+                      max={36}
+                      step={1}
+                      className="w-full slider-smooth"
+                      data-testid="slider-lock-period"
+                    />
+                    <div className="flex justify-between text-sm text-muted-foreground mt-4">
+                      <div className="text-center">
+                        <div className="font-semibold">1 Year</div>
+                        <div className="text-xs">12 months</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold">2 Years</div>
+                        <div className="text-xs">24 months</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="font-semibold">3 Years</div>
+                        <div className="text-xs">36 months</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -285,12 +324,12 @@ export default function Stake() {
                         <div className="p-4 bg-primary/10 rounded-lg border border-primary/30 mb-4">
                           <Label htmlFor="referrer" className="text-sm font-medium mb-2 block">Add Referrer (Optional)</Label>
                           <div className="flex gap-2">
-                            <Input
+                            <input
                               id="referrer"
                               placeholder="Enter referrer address"
                               value={referrerAddress}
                               onChange={(e) => setReferrerAddress(e.target.value)}
-                              className="flex-1 h-10 bg-white/90 dark:bg-gray-800 border-primary/30"
+                              className="flex-1 h-10 px-3 py-2 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors outline-none"
                             />
                           </div>
                         </div>

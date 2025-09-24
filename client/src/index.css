@@ -145,6 +145,20 @@
     background-repeat: no-repeat;
     background-size: cover;
   }
+
+  .slider-smooth .slider-track {
+    transition: all 0.2s ease-out;
+  }
+
+  .slider-smooth .slider-thumb {
+    transition: all 0.15s ease-out;
+    box-shadow: 0 2px 10px rgba(0, 150, 255, 0.3);
+  }
+
+  .slider-smooth .slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 20px rgba(0, 150, 255, 0.5);
+  }
 }
 
 @keyframes gradient {
