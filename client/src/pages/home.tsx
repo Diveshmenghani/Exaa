@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
+import { APP_NAME, COIN_TICKER, STAKED_DERIVATIVE, BRANDING } from '@/lib/branding';
 
 export default function Home() {
   const [stakeAmount, setStakeAmount] = useState(1);
@@ -12,9 +13,9 @@ export default function Home() {
 
   // Staking calculations
   const apy = 2.38;
-  const ethPrice = 3977.64;
+  const zePrice = BRANDING.DEFAULT_PRICE_USD;
   const annualReward = stakeAmount * (apy / 100);
-  const osETHReceived = stakeAmount * 0.94;
+  const osZEReceived = stakeAmount * 0.94;
 
   useEffect(() => {
     // Set vibrant gradient background
@@ -35,13 +36,13 @@ export default function Home() {
             <div className="space-y-8">
               <div>
                 <h1 className="text-6xl md:text-7xl font-black leading-tight">
-                  <span className="bg-gradient-to-r from-red-500 via-purple-600 to-purple-800 bg-clip-text text-transparent">
-                    Stake ETH
+                  <span className="bg-gradient-to-r from-cyan-400 via-purple-600 to-pink-500 bg-clip-text text-transparent">
+                    Stake {COIN_TICKER}
                   </span>
                   <br />
                   <span className="text-white">on your</span>
                   <br />
-                  <span className="bg-gradient-to-r from-red-500 via-purple-600 to-purple-800 bg-clip-text text-transparent">
+                  <span className="bg-gradient-to-r from-cyan-400 via-purple-600 to-pink-500 bg-clip-text text-transparent">
                     terms.
                   </span>
                 </h1>
@@ -61,8 +62,8 @@ export default function Home() {
                       <span className="text-xs">👥</span>
                     </div>
                   </div>
-                  <div className="text-3xl font-bold" data-testid="text-total-stakers">86k+</div>
-                  <div className="text-sm text-gray-400">Total stakers</div>
+                  <div className="text-3xl font-bold text-white" data-testid="text-total-stakers">86k+</div>
+                  <div className="text-sm text-gray-300">Total stakers</div>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-2">
@@ -70,8 +71,8 @@ export default function Home() {
                       <span className="text-xs">💎</span>
                     </div>
                   </div>
-                  <div className="text-3xl font-bold" data-testid="text-total-staked">⟠ 317.63k</div>
-                  <div className="text-sm text-gray-400">Total staked</div>
+                  <div className="text-3xl font-bold text-white" data-testid="text-total-staked">{COIN_TICKER} 317.63k</div>
+                  <div className="text-sm text-gray-300">Total staked</div>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-2">
@@ -79,8 +80,8 @@ export default function Home() {
                       <span className="text-xs">🏆</span>
                     </div>
                   </div>
-                  <div className="text-3xl font-bold" data-testid="text-rewards-paid">⟠ 26.14k</div>
-                  <div className="text-sm text-gray-400">Rewards paid</div>
+                  <div className="text-3xl font-bold text-white" data-testid="text-rewards-paid">{COIN_TICKER} 26.14k</div>
+                  <div className="text-sm text-gray-300">Rewards paid</div>
                 </div>
               </div>
             </div>
@@ -89,22 +90,22 @@ export default function Home() {
             <div className="space-y-4">
               {/* APY and Reward Cards */}
               <div className="grid grid-cols-2 gap-4">
-                <Card className="bg-white/10 backdrop-blur-md border-white/20 rounded-2xl">
+                <Card className="bg-white/80 backdrop-blur-md border-white/40 rounded-2xl">
                   <CardContent className="p-4">
-                    <div className="text-sm text-gray-300 mb-1">APY</div>
-                    <div className="text-2xl font-bold text-white">{apy}%</div>
+                    <div className="text-sm text-gray-600 mb-1">APY</div>
+                    <div className="text-2xl font-bold text-gray-900">{apy}%</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-white/10 backdrop-blur-md border-white/20 rounded-2xl">
+                <Card className="bg-white/80 backdrop-blur-md border-white/40 rounded-2xl">
                   <CardContent className="p-4">
-                    <div className="text-sm text-gray-300 mb-1">Proj. annual reward</div>
-                    <div className="text-2xl font-bold text-white">⟠ {annualReward.toFixed(5)}</div>
+                    <div className="text-sm text-gray-600 mb-1">Proj. annual reward</div>
+                    <div className="text-2xl font-bold text-gray-900">{COIN_TICKER} {annualReward.toFixed(5)}</div>
                   </CardContent>
                 </Card>
               </div>
 
               {/* Main Staking Input */}
-              <Card className="bg-white/10 backdrop-blur-md border-white/20 rounded-2xl">
+              <Card className="bg-white/90 backdrop-blur-md border-white/50 rounded-2xl shadow-xl">
                 <CardContent className="p-6 space-y-6">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
@@ -112,22 +113,22 @@ export default function Home() {
                         type="number"
                         value={stakeAmount}
                         onChange={(e) => setStakeAmount(parseFloat(e.target.value) || 0)}
-                        className="text-4xl font-bold bg-transparent border-none text-white placeholder-gray-400 p-0 h-auto focus:outline-none"
+                        className="text-4xl font-bold bg-transparent border-none text-gray-900 placeholder-gray-500 p-0 h-auto focus:outline-none"
                         style={{ fontSize: '2.5rem', fontWeight: 'bold' }}
                         min="0"
                         step="0.1"
                         data-testid="input-stake-amount"
                       />
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-white">⟠ ETH</div>
+                        <div className="text-2xl font-bold text-gray-900">{COIN_TICKER}</div>
                       </div>
                     </div>
-                    <div className="text-gray-400">$ {(stakeAmount * ethPrice).toLocaleString()}</div>
+                    <div className="text-gray-600">$ {(stakeAmount * zePrice).toLocaleString()}</div>
                   </div>
 
                   {/* Lock Period Slider */}
                   <div className="space-y-3">
-                    <div className="text-sm text-gray-300">Lock Period: {lockPeriod[0]} months</div>
+                    <div className="text-sm text-gray-700 font-medium">Lock Period: {lockPeriod[0]} months</div>
                     <Slider
                       value={lockPeriod}
                       onValueChange={setLockPeriod}
@@ -140,19 +141,19 @@ export default function Home() {
 
                   {/* Reward Info */}
                   <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center text-gray-300">
+                    <div className="flex items-center text-gray-600">
                       You will receive
-                      <div className="w-4 h-4 bg-gray-500 rounded-full ml-2 flex items-center justify-center">
+                      <div className="w-4 h-4 bg-gray-400 rounded-full ml-2 flex items-center justify-center">
                         <span className="text-xs">ℹ</span>
                       </div>
                     </div>
-                    <div className="font-bold text-white">{osETHReceived.toFixed(2)} osETH</div>
+                    <div className="font-bold text-gray-900">{osZEReceived.toFixed(2)} {STAKED_DERIVATIVE}</div>
                   </div>
 
                   {/* Stake Button */}
                   <Link href="/stake">
                     <Button 
-                      className="w-full bg-black hover:bg-gray-900 text-white font-semibold py-4 rounded-full text-lg"
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-4 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300"
                       data-testid="button-stake"
                     >
                       Stake
@@ -171,8 +172,8 @@ export default function Home() {
           <div className="text-center mb-20">
             <h2 className="text-5xl font-bold mb-6 text-white">
               Why Choose 
-              <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent ml-3">
-                Hica
+              <span className="bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent ml-3">
+                {APP_NAME}
               </span>
               ?
             </h2>
@@ -197,16 +198,16 @@ export default function Home() {
                   <div className="text-4xl">🔐</div>
                 </div>
                 <h3 className="text-2xl font-bold mb-4 text-white">Simple and secure</h3>
-                <h4 className="text-lg font-semibold text-white mb-4">staking with osETH.</h4>
+                <h4 className="text-lg font-semibold text-white mb-4">staking with {STAKED_DERIVATIVE}.</h4>
                 
                 <div className="space-y-4 text-gray-300 text-left">
                   <p className="text-sm leading-relaxed">
-                    Get <span className="text-white font-semibold">osETH</span> and start staking in 
+                    Get <span className="text-white font-semibold">{STAKED_DERIVATIVE}</span> and start staking in 
                     seconds. Staking has never been easier.
                   </p>
                   <p className="text-sm leading-relaxed">
                     <span className="text-white font-semibold">Earn staking rewards</span> every second 
-                    by holding osETH.
+                    by holding {STAKED_DERIVATIVE}.
                   </p>
                 </div>
 
@@ -215,7 +216,7 @@ export default function Home() {
                     variant="outline" 
                     className="bg-white/10 border-white/30 text-white hover:bg-white/20 rounded-full px-6 py-2"
                   >
-                    Stake with osETH
+                    Stake with {STAKED_DERIVATIVE}
                   </Button>
                 </div>
               </CardContent>
@@ -305,7 +306,7 @@ export default function Home() {
           <div className="text-center mb-20">
             <h2 className="text-5xl font-bold mb-6 text-white">
               Get Started 
-              <span className="bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent ml-3">
+              <span className="bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent ml-3">
                 Today
               </span>
             </h2>
@@ -358,7 +359,7 @@ export default function Home() {
                   </div>
                   <h3 className="text-2xl font-bold mb-4 text-white">Token Exchange</h3>
                   <p className="text-gray-300 mb-6 leading-relaxed">
-                    Seamlessly swap between USDT and HICA tokens with zero fees and instant execution.
+                    Seamlessly swap between USDT and {COIN_TICKER} tokens with zero fees and instant execution.
                   </p>
                   <div className="space-y-3 text-sm text-gray-300 text-left">
                     <div className="flex items-center">
