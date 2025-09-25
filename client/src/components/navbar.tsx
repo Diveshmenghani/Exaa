@@ -1,6 +1,7 @@
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks/use-wallet';
+import { APP_NAME, LOGO_PATH } from '@/lib/branding';
 
 export default function Navbar() {
   const { isConnected, walletAddress, connect, disconnect } = useWallet();
@@ -10,10 +11,14 @@ export default function Navbar() {
       <div className="container mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <Link href="/" data-testid="link-home">
-            <div className="flex items-center space-x-2 cursor-pointer">
-              <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-lg"></div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                HICA
+            <div className="flex items-center space-x-3 cursor-pointer">
+              <img 
+                src={LOGO_PATH} 
+                alt="Zeritheum Logo" 
+                className="w-10 h-10 object-contain rounded-lg"
+              />
+              <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent">
+                {APP_NAME}
               </span>
             </div>
           </Link>

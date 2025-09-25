@@ -12,7 +12,6 @@ import Stake from "@/pages/stake";
 import Unstake from "@/pages/unstake";
 import Profile from "@/pages/profile";
 import Navbar from "@/components/navbar";
-import CustomCursor from "@/components/custom-cursor";
 import ParticleBackground from "@/components/particle-background";
 import ScrollIndicator from "@/components/scroll-indicator";
 
@@ -38,7 +37,6 @@ function App() {
       <WalletProvider>
         <ContractProvider>
           <TooltipProvider>
-            <CustomCursor />
             <ParticleBackground />
             <ScrollIndicator />
             <Toaster />
