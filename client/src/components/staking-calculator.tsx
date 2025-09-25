@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { APY_RATES, LOCK_PERIODS, REFERRAL_COMMISSION_RATES } from '@/lib/constants';
+import { COIN_TICKER } from '@/lib/branding';
 
 interface StakingCalculatorProps {
   onCalculationChange?: (calculation: {
@@ -61,7 +62,7 @@ export default function StakingCalculator({ onCalculationChange }: StakingCalcul
       {/* Calculator Inputs */}
       <Card className="glass-card">
         <CardHeader>
-          <CardTitle className="text-2xl font-bold">Stake Your HICA</CardTitle>
+          <CardTitle className="text-2xl font-bold">Stake Your {COIN_TICKER}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
@@ -121,7 +122,7 @@ export default function StakingCalculator({ onCalculationChange }: StakingCalcul
             <div className="flex justify-between items-center p-4 bg-muted/10 rounded-xl">
               <span>Stake Amount</span>
               <span className="font-bold" data-testid="text-display-stake-amount">
-                {parseInt(stakeAmount || '0').toLocaleString()} HICA
+                {parseInt(stakeAmount || '0').toLocaleString()} {COIN_TICKER}
               </span>
             </div>
             <div className="flex justify-between items-center p-4 bg-muted/10 rounded-xl">
@@ -139,13 +140,13 @@ export default function StakingCalculator({ onCalculationChange }: StakingCalcul
             <div className="flex justify-between items-center p-4 bg-primary/20 rounded-xl border border-primary/30">
               <span>Monthly Rewards</span>
               <span className="font-bold text-primary text-xl" data-testid="text-display-monthly-rewards">
-                {Math.round(calculation.monthlyRewards).toLocaleString()} HICA
+                {Math.round(calculation.monthlyRewards).toLocaleString()} {COIN_TICKER}
               </span>
             </div>
             <div className="flex justify-between items-center p-4 bg-secondary/20 rounded-xl border border-secondary/30">
               <span>Total After Lock Period</span>
               <span className="font-bold text-secondary text-xl" data-testid="text-display-total-rewards">
-                {Math.round(calculation.totalRewards).toLocaleString()} HICA
+                {Math.round(calculation.totalRewards).toLocaleString()} {COIN_TICKER}
               </span>
             </div>
           </div>

@@ -166,7 +166,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Enhanced Why Choose Hica Section */}
+      {/* Enhanced Why Choose Zeritheum Section */}
       <section className="py-24 relative">
         <div className="container mx-auto px-6">
           <div className="text-center mb-20">
