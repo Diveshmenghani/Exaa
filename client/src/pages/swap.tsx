@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
 import { useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { COIN_TICKER } from '@/lib/branding';
 
 export default function Swap() {
   const [fromAmount, setFromAmount] = useState('');
@@ -50,13 +51,13 @@ export default function Swap() {
       setNeedsApproval(false);
       toast({
         title: 'Approval Successful!',
-        description: 'HICA tokens have been approved for trading.',
+        description: `${COIN_TICKER} tokens have been approved for trading.`,
       });
     },
     onError: () => {
       toast({
         title: 'Approval Failed',
-        description: 'Failed to approve HICA tokens.',
+        description: `Failed to approve ${COIN_TICKER} tokens.`,
         variant: 'destructive',
       });
     },
@@ -100,7 +101,7 @@ export default function Swap() {
     if (swapDirection === 'sell' && needsApproval) {
       toast({
         title: 'Approval Required',
-        description: 'Please approve HICA tokens first.',
+        description: `Please approve ${COIN_TICKER} tokens first.`,
         variant: 'destructive',
       });
       return;
@@ -113,8 +114,8 @@ export default function Swap() {
     });
   };
 
-  const fromToken = swapDirection === 'buy' ? 'USDT' : 'HICA';
-  const toToken = swapDirection === 'buy' ? 'HICA' : 'USDT';
+  const fromToken = swapDirection === 'buy' ? 'USDT' : COIN_TICKER;
+  const toToken = swapDirection === 'buy' ? COIN_TICKER : 'USDT';
 
   return (
     <div className="min-h-screen pt-24 pb-20">
@@ -125,7 +126,7 @@ export default function Swap() {
               Token Swap
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground">Exchange USDT for HICA at 1:1 ratio</p>
+          <p className="text-xl text-muted-foreground">Exchange USDT for {COIN_TICKER} at 1:1 ratio</p>
         </div>
 
         <div className="max-w-2xl mx-auto">
@@ -144,7 +145,7 @@ export default function Swap() {
                         ? 'bg-gradient-to-r from-yellow-400 to-yellow-600' 
                         : 'bg-gradient-to-r from-primary to-secondary'
                     }`}>
-                      {fromToken === 'USDT' ? '$' : 'H'}
+                      {fromToken === 'USDT' ? '$' : fromToken.charAt(0)}
                     </div>
                     <span className="font-semibold" data-testid="text-from-token">{fromToken}</span>
                   </div>
@@ -176,11 +177,11 @@ export default function Swap() {
                 <div className="flex items-center space-x-4 p-4 bg-muted/20 rounded-xl border border-border">
                   <div className="flex items-center space-x-2 flex-1">
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                      toToken === 'HICA' 
+                      toToken === COIN_TICKER 
                         ? 'bg-gradient-to-r from-primary to-secondary' 
                         : 'bg-gradient-to-r from-yellow-400 to-yellow-600'
                     }`}>
-                      {toToken === 'HICA' ? 'H' : '$'}
+                      {toToken === COIN_TICKER ? toToken.charAt(0) : '$'}
                     </div>
                     <span className="font-semibold" data-testid="text-to-token">{toToken}</span>
                   </div>
@@ -198,7 +199,7 @@ export default function Swap() {
               {/* Rate Info */}
               <div className="flex justify-between items-center p-4 bg-muted/10 rounded-xl">
                 <span className="text-muted-foreground">Exchange Rate</span>
-                <span className="font-semibold" data-testid="text-exchange-rate">1 USDT = 1 HICA</span>
+                <span className="font-semibold" data-testid="text-exchange-rate">1 USDT = 1 {COIN_TICKER}</span>
               </div>
 
               {/* Action Buttons */}
@@ -227,7 +228,7 @@ export default function Swap() {
                 <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-xl p-4">
                   <div className="flex items-center space-x-2 mb-3">
                     <i className="fas fa-info-circle text-yellow-500"></i>
-                    <span className="text-sm">First-time users need to approve HICA token</span>
+                    <span className="text-sm">First-time users need to approve {COIN_TICKER} token</span>
                   </div>
                   <Button
                     onClick={() => approveMutation.mutate()}
@@ -235,7 +236,7 @@ export default function Swap() {
                     className="bg-yellow-500 text-black hover:bg-yellow-600 px-4 py-2 rounded-lg text-sm font-semibold"
                     data-testid="button-approve-hica"
                   >
-                    {approveMutation.isPending ? 'Approving...' : 'Approve HICA'}
+                    {approveMutation.isPending ? 'Approving...' : `Approve ${COIN_TICKER}`}
                   </Button>
                 </div>
               )}

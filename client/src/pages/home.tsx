@@ -437,14 +437,14 @@ export default function Home() {
             <div className="flex items-center justify-center space-x-2 mb-6">
               <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl"></div>
               <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-                HICA
+{COIN_TICKER}
               </span>
             </div>
             <p className="text-gray-400 mb-6 max-w-lg mx-auto">
               The future of decentralized staking with innovative rewards and community-driven growth.
             </p>
             <div className="text-sm text-gray-500">
-              © 2024 HICA Protocol. All rights reserved.
+              © 2024 {APP_NAME} Protocol. All rights reserved.
             </div>
           </div>
         </div>

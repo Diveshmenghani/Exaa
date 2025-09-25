@@ -9,6 +9,7 @@ import { useWallet } from '@/hooks/use-wallet';
 import { useContract } from '@/hooks/use-contract';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { COIN_TICKER } from '@/lib/branding';
 
 export default function Stake() {
   const { toast } = useToast();
@@ -83,7 +84,7 @@ export default function Stake() {
     onSuccess: () => {
       toast({
         title: 'Staking Successful!',
-        description: `Successfully staked ${stakeAmount} HICA for ${Math.ceil(lockPeriod[0]/12)} years.`,
+        description: `Successfully staked ${stakeAmount} ${COIN_TICKER} for ${Math.ceil(lockPeriod[0]/12)} years.`,
       });
       setStakeAmount('');
       setReferrerAddress('');
@@ -219,7 +220,7 @@ export default function Stake() {
                   <div className="text-xl text-muted-foreground">
                     $ {userBalance?.usdValue || '0.00'}
                   </div>
-                  <div className="text-sm text-muted-foreground mt-2">HICA</div>
+                  <div className="text-sm text-muted-foreground mt-2">{COIN_TICKER}</div>
                 </div>
 
                 {/* Stake Amount Display/Input */}
@@ -242,7 +243,7 @@ export default function Stake() {
                         data-testid="input-stake-amount"
                         autoFocus
                       />
-                      <span className="text-2xl text-muted-foreground">HICA</span>
+                      <span className="text-2xl text-muted-foreground">{COIN_TICKER}</span>
                     </div>
                   ) : (
                     <div 
@@ -250,7 +251,7 @@ export default function Stake() {
                       onClick={() => setIsEditingAmount(true)}
                       data-testid="display-stake-amount"
                     >
-                      {stakeAmount || '0'} <span className="text-2xl text-muted-foreground">HICA</span>
+                      {stakeAmount || '0'} <span className="text-2xl text-muted-foreground">{COIN_TICKER}</span>
                     </div>
                   )}
                   <div className="text-sm text-muted-foreground mt-2">Click to edit amount</div>
@@ -298,7 +299,7 @@ export default function Stake() {
                 <div className="text-center mb-8 p-4 bg-primary/10 rounded-lg border border-primary/30">
                   <div className="text-sm font-medium mb-2">Estimated Rewards</div>
                   <div className="text-2xl font-bold text-primary" data-testid="estimated-rewards">
-                    {calculateRewards().toLocaleString()} HICA
+                    {calculateRewards().toLocaleString()} {COIN_TICKER}
                   </div>
                   <div className="text-sm font-medium mt-1">
                     APY: <span className="text-primary font-bold">{calculateAPY(lockPeriod[0])}%</span> monthly
@@ -342,7 +343,7 @@ export default function Stake() {
                         className="neon-button w-full py-4 rounded-xl text-lg font-bold"
                         data-testid="button-stake-tokens"
                       >
-                        {stakeMutation.isPending ? 'Staking...' : 'Stake HICA'}
+                        {stakeMutation.isPending ? 'Staking...' : `Stake ${COIN_TICKER}`}
                       </Button>
                     </div>
                   )}
@@ -369,7 +370,7 @@ export default function Stake() {
                         {userStakes.map((stake: any) => (
                           <div key={stake.id} className="p-4 bg-muted/10 rounded-lg border border-border" data-testid={`stake-item-${stake.id}`}>
                             <div className="flex justify-between items-center mb-2">
-                              <span className="font-semibold">{parseFloat(stake.amount).toLocaleString()} HICA</span>
+                              <span className="font-semibold">{parseFloat(stake.amount).toLocaleString()} {COIN_TICKER}</span>
                               <span className={`px-2 py-1 rounded text-xs ${stake.isActive ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'}`}>
                                 {stake.isActive ? 'Active' : 'Completed'}
                               </span>

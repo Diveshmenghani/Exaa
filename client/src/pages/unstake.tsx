@@ -7,6 +7,7 @@ import { useWallet } from '@/hooks/use-wallet';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Stake, ContractSettings } from '@shared/schema';
+import { COIN_TICKER } from '@/lib/branding';
 
 export default function Unstake() {
   const { toast } = useToast();
@@ -151,7 +152,7 @@ export default function Unstake() {
                         <div>
                           <div className="text-sm text-muted-foreground">Amount</div>
                           <div className="font-bold text-lg" data-testid={`text-stake-amount-${stake.id}`}>
-                            {parseInt(stake.amount).toLocaleString()} HICA
+                            {parseInt(stake.amount).toLocaleString()} {COIN_TICKER}
                           </div>
                         </div>
                         <div>
@@ -179,7 +180,7 @@ export default function Unstake() {
                             {stake.canUnstake ? 'Total Earned' : 'Current Earned'}
                           </div>
                           <div className="font-bold text-primary" data-testid={`text-stake-earned-${stake.id}`}>
-                            {parseInt(stake.earnedAmount || '0').toLocaleString()} HICA
+                            {parseInt(stake.earnedAmount || '0').toLocaleString()} {COIN_TICKER}
                           </div>
                         </div>
                         <div>
@@ -230,7 +231,7 @@ export default function Unstake() {
                   <div key={stake.id} className="flex items-center justify-between p-4 bg-muted/10 rounded-lg">
                     <div>
                       <div className="font-semibold">
-                        {parseInt(stake.amount).toLocaleString()} HICA
+                        {parseInt(stake.amount).toLocaleString()} {COIN_TICKER}
                       </div>
                       <div className="text-sm text-muted-foreground">
                         {formatLockPeriod(stake.lockPeriodMonths)} stake

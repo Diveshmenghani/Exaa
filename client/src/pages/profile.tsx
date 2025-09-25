@@ -9,6 +9,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { User, Referral } from '@shared/schema';
 import ReferralNetwork from '@/components/referral-network';
+import { APP_NAME, COIN_TICKER } from '@/lib/branding';
 
 export default function Profile() {
   const { toast } = useToast();
@@ -37,7 +38,7 @@ export default function Profile() {
     onSuccess: () => {
       toast({
         title: 'Registration Successful!',
-        description: 'Welcome to HICA Protocol! You can now start staking.',
+        description: `Welcome to ${APP_NAME} Protocol! You can now start staking.`,
       });
       setIsRegistering(false);
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
@@ -72,7 +73,7 @@ export default function Profile() {
     onSuccess: (data) => {
       toast({
         title: 'Rewards Claimed!',
-        description: `Successfully claimed ${parseFloat(data.claimed).toLocaleString()} HICA tokens.`,
+        description: `Successfully claimed ${parseFloat(data.claimed).toLocaleString()} ${COIN_TICKER} tokens.`,
       });
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
     },
@@ -276,10 +277,10 @@ export default function Profile() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-center p-6 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl">
-                  <div className="text-4xl font-bold mb-2" data-testid="text-total-hica-balance">
-                    {(parseFloat(user?.totalEarned || '0') + parseFloat(user?.referralEarnings || '0')).toLocaleString()} HICA
+                  <div className="text-4xl font-bold mb-2" data-testid="text-total-balance">
+                    {(parseFloat(user?.totalEarned || '0') + parseFloat(user?.referralEarnings || '0')).toLocaleString()} {COIN_TICKER}
                   </div>
-                  <div className="text-muted-foreground">Total HICA Balance</div>
+                  <div className="text-muted-foreground">Total {COIN_TICKER} Balance</div>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -413,7 +414,7 @@ export default function Profile() {
                   <div className="font-bold mb-1" data-testid="text-total-staked">
                     {parseFloat(user?.totalStaked || '0').toLocaleString()}
                   </div>
-                  <div className="text-sm text-muted-foreground">HICA Staked</div>
+                  <div className="text-sm text-muted-foreground">{COIN_TICKER} Staked</div>
                 </div>
                 
                 <div className="text-center">
@@ -423,7 +424,7 @@ export default function Profile() {
                   <div className="font-bold mb-1 text-primary" data-testid="text-total-earned">
                     {parseFloat(user?.totalEarned || '0').toLocaleString()}
                   </div>
-                  <div className="text-sm text-muted-foreground">HICA Earned</div>
+                  <div className="text-sm text-muted-foreground">{COIN_TICKER} Earned</div>
                 </div>
                 
                 <div className="text-center">
