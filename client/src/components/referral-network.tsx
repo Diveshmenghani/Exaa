@@ -108,7 +108,7 @@ export default function ReferralNetwork({
         <CardContent>
           <div className="text-center">
             <div className="text-4xl font-bold text-primary mb-2" data-testid="text-claimable-rewards">
-              {parseFloat(referralEarnings).toLocaleString()} HICA
+              {parseFloat(referralEarnings).toLocaleString()} ZE
             </div>
             <div className="text-muted-foreground">Available to claim</div>
           </div>
@@ -116,7 +116,7 @@ export default function ReferralNetwork({
       </Card>
 
       {/* Commission Rates */}
-      <Card className="glass-card">
+      {/* <Card className="glass-card">
         <CardHeader>
           <CardTitle className="text-xl font-bold">Commission Structure</CardTitle>
         </CardHeader>
@@ -134,7 +134,7 @@ export default function ReferralNetwork({
             </div>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   );
 }

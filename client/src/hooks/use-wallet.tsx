@@ -27,6 +27,38 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [chainId, setChainId] = useState<number | null>(null);
   const [isHoleskyNetwork, setIsHoleskyNetwork] = useState(false);
 
+  // Check if wallet was previously connected
+  const checkConnection = async () => {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+          const web3Signer = web3Provider.getSigner();
+          const address = await web3Signer.getAddress();
+          const network = await web3Provider.getNetwork();
+          
+          setProvider(web3Provider);
+          setSigner(web3Signer);
+          setWalletAddress(address);
+          setChainId(network.chainId);
+          setIsConnected(true);
+          setIsHoleskyNetwork(network.chainId === parseInt(HOLESKY_CHAIN_ID, 16));
+        } else {
+          // No accounts connected, reset state
+          setWalletAddress(null);
+          setIsConnected(false);
+          setProvider(null);
+          setSigner(null);
+          setChainId(null);
+          setIsHoleskyNetwork(false);
+        }
+      } catch (error) {
+        console.error('Error checking wallet connection:', error);
+      }
+    }
+  };
+
   // Function to switch to Holesky testnet
   const switchToHoleskyNetwork = async (): Promise<boolean> => {
     if (!window.ethereum) {
@@ -82,30 +114,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Check if wallet was previously connected
-    const checkConnection = async () => {
-      if (window.ethereum) {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts.length > 0) {
-            const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
-            const web3Signer = web3Provider.getSigner();
-            const address = await web3Signer.getAddress();
-            const network = await web3Provider.getNetwork();
-            
-            setProvider(web3Provider);
-            setSigner(web3Signer);
-            setWalletAddress(address);
-            setChainId(network.chainId);
-            setIsConnected(true);
-            setIsHoleskyNetwork(network.chainId === parseInt(HOLESKY_CHAIN_ID, 16));
-          }
-        } catch (error) {
-          console.error('Error checking wallet connection:', error);
-        }
-      }
-    };
-
     checkConnection();
 
     // Listen for account changes

@@ -4,21 +4,25 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Slider } from '@/components/ui/slider';
 import { Label } from '@/components/ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
 import { useContract } from '@/hooks/use-contract';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { COIN_TICKER } from '@/lib/branding';
+import { ethers } from 'ethers';
 
 export default function Stake() {
   const { toast } = useToast();
   const { walletAddress, isConnected, connect } = useWallet();
-  const { stake, approveTokens, approveAndStake, isLoading, error } = useContract();
+  const { approveAndStake, unstake, getUserStakes, isLoading, error } = useContract();
   const [stakeAmount, setStakeAmount] = useState('');
   const [lockPeriod, setLockPeriod] = useState([12]); // Slider uses array format
   const [referrerAddress, setReferrerAddress] = useState('');
   const [isEditingAmount, setIsEditingAmount] = useState(false);
+  const [showValidationDialog, setShowValidationDialog] = useState(false);
+  const [validationReferrer, setValidationReferrer] = useState('');
 
   // Calculate APY based on lock period
   const calculateAPY = (months: number) => {
@@ -57,13 +61,25 @@ export default function Stake() {
   const { data: userStakes } = useQuery({
     queryKey: ['userStakes', walletAddress],
     queryFn: async () => {
-      const response = await apiRequest('GET', `/api/stakes/user/${walletAddress}`);
-      const data = await response.json();
-      // Add hasReferrer property based on existing data
-      return {
-        ...data,
-        hasReferrer: data.referrer && data.referrer !== '0x0000000000000000000000000000000000000000'
-      };
+      try {
+        const response = await apiRequest('GET', `/api/stakes/user/${walletAddress}`);
+        const data = await response.json();
+        // Add hasReferrer property based on existing data
+        return {
+          ...data,
+          hasReferrer: data.referrer && data.referrer !== '0x0000000000000000000000000000000000000000'
+        };
+      } catch (error: any) {
+        // If user not found (404), return empty stakes data
+        if (error.status === 404 || error.message?.includes('User not found')) {
+          return {
+            stakes: [],
+            hasReferrer: false,
+            referrer: null
+          };
+        }
+        throw error; // Re-throw other errors
+      }
     },
     enabled: !!walletAddress
   });
@@ -72,7 +88,7 @@ export default function Stake() {
 
   const stakeMutation = useMutation({
     mutationFn: async (data: { amount: string; lockYears: number; referrer: string }) => {
-      // Use the combined approveAndStake function
+      // Use the approveAndStake function to handle both approval and staking
       const success = await approveAndStake(data.amount, data.lockYears, data.referrer);
       
       if (!success) {
@@ -122,25 +138,30 @@ export default function Stake() {
       return;
     }
     
-    // Convert months to years for the contract (rounding up)
-    const lockYears = Math.ceil(lockPeriod[0] / 12);
-    
     // Validate lock period (must be at least 1 month)
     if (lockPeriod[0] < 1) {
       toast({
         title: 'Invalid Lock Period',
-        description: 'Lock period must be at least 1 month.',
+        description: 'Lock period must be at least 1 Year.',
         variant: 'destructive',
       });
       return;
     }
     
+    // Set initial referrer for validation dialog
+    setValidationReferrer(referrerAddress);
+    
+    // Show validation dialog
+    setShowValidationDialog(true);
+  };
+
+  const handleConfirmStake = () => {
     // Validate referrer address if provided
     let referrer = '0x0000000000000000000000000000000000000000';
-    if (referrerAddress) {
+    if (validationReferrer) {
       try {
         // Check if it's a valid Ethereum address
-        if (!/^0x[a-fA-F0-9]{40}$/.test(referrerAddress)) {
+        if (!/^0x[a-fA-F0-9]{40}$/.test(validationReferrer)) {
           toast({
             title: 'Invalid Referrer Address',
             description: 'Please enter a valid Ethereum address or leave it empty.',
@@ -148,7 +169,7 @@ export default function Stake() {
           });
           return;
         }
-        referrer = referrerAddress;
+        referrer = validationReferrer;
       } catch (error) {
         toast({
           title: 'Invalid Referrer Address',
@@ -159,7 +180,11 @@ export default function Stake() {
       }
     }
     
-    // All validations passed, proceed with staking
+    // Convert months to years for the contract (rounding up)
+    const lockYears = Math.ceil(lockPeriod[0] / 12);
+    
+    // Close dialog and proceed with staking
+    setShowValidationDialog(false);
     stakeMutation.mutate({
       amount: stakeAmount.trim(),
       lockYears: lockYears,
@@ -167,9 +192,49 @@ export default function Stake() {
     });
   };
 
+  // Helper function to find stake index in blockchain
+  const findStakeIndex = async (dbStake: any): Promise<number> => {
+    if (!walletAddress) throw new Error('Wallet not connected');
+    
+    const blockchainStakes = await getUserStakes(walletAddress);
+    
+    // Match by amount and approximate timestamp
+    const dbAmount = parseFloat(dbStake.amount);
+    const dbTimestamp = new Date(dbStake.startDate).getTime();
+    
+    for (let i = 0; i < blockchainStakes.length; i++) {
+      const blockchainStake = blockchainStakes[i];
+      const blockchainAmount = parseFloat(ethers.utils.formatEther(blockchainStake.amount));
+      
+      // Match by amount (with small tolerance for precision differences)
+      if (Math.abs(blockchainAmount - dbAmount) < 0.001) {
+        return i;
+      }
+    }
+    
+    throw new Error('Could not find matching stake in blockchain');
+  };
+
   // Unstake mutation
   const unstakeMutation = useMutation({
     mutationFn: async (stakeId: string) => {
+      // First get the stake from our query data to find the index
+      const stakes = userStakes.data?.stakes || [];
+      const dbStake = stakes.find((s: any) => s.id === stakeId);
+      if (!dbStake) {
+        throw new Error('Stake not found');
+      }
+      
+      // Find the corresponding stake index in the blockchain
+      const stakeIndex = await findStakeIndex(dbStake);
+      
+      // Call the blockchain contract to unstake
+      const contractSuccess = await unstake(stakeIndex);
+      if (!contractSuccess) {
+        throw new Error('Failed to unstake from blockchain contract');
+      }
+      
+      // Then update the database
       const response = await apiRequest('POST', `/api/stakes/${stakeId}/unstake`);
       return response.json();
     },
@@ -211,18 +276,6 @@ export default function Stake() {
               </TabsList>
 
               <TabsContent value="stake" className="space-y-6">
-                {/* Balance Display */}
-                <div className="text-center mb-8 cursor-pointer" onClick={() => setIsEditingAmount(true)}>
-                  <div className="text-sm text-muted-foreground mb-2">Available Balance</div>
-                  <div className="text-6xl font-bold text-primary mb-2" data-testid="balance-amount">
-                    {userBalance?.balance?.toLocaleString() || 0}
-                  </div>
-                  <div className="text-xl text-muted-foreground">
-                    $ {userBalance?.usdValue || '0.00'}
-                  </div>
-                  <div className="text-sm text-muted-foreground mt-2">{COIN_TICKER}</div>
-                </div>
-
                 {/* Stake Amount Display/Input */}
                 <div className="text-center mb-8 p-6 bg-primary/10 rounded-xl border border-primary/30">
                   <div className="text-sm font-medium mb-2">Amount to Stake</div>
@@ -255,6 +308,32 @@ export default function Stake() {
                     </div>
                   )}
                   <div className="text-sm text-muted-foreground mt-2">Click to edit amount</div>
+                </div>
+
+                {/* Stake Button - Moved here under amount input */}
+                <div className="mb-8">
+                  {!isConnected ? (
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={connect}
+                        className="neon-button w-3/4 py-6 rounded-xl text-lg font-bold"
+                        data-testid="button-connect-wallet"
+                      >
+                        Connect
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex justify-center">
+                      <Button
+                        onClick={handleStake}
+                        disabled={stakeMutation.isPending || !stakeAmount || parseFloat(stakeAmount) <= 0}
+                        className="neon-button w-3/4 py-6 rounded-xl text-lg font-bold"
+                        data-testid="button-stake-tokens"
+                      >
+                        {stakeMutation.isPending ? 'Staking...' : `Stake ${COIN_TICKER}`}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Lock Period Slider */}
@@ -306,48 +385,21 @@ export default function Stake() {
                   </div>
                 </div>
 
-                {/* Connect/Stake Button with Conditional Referral */}
-                <div className="mb-8">
-                  {!isConnected ? (
-                    <div className="flex justify-center">
-                      <Button
-                        onClick={connect}
-                        className="neon-button px-32 py-4 rounded-xl text-lg font-bold"
-                        data-testid="button-connect-wallet"
-                      >
-                        Connect
-                      </Button>
+                {/* Referrer Input - Moved to bottom */}
+                {isConnected && !userStakes?.hasReferrer && (
+                  <div className="p-4 bg-primary/10 rounded-lg border border-primary/30 mb-8">
+                    <Label htmlFor="referrer" className="text-sm font-medium mb-2 block">Add Referrer (Optional)</Label>
+                    <div className="flex gap-2">
+                      <input
+                        id="referrer"
+                        placeholder="Enter referrer address"
+                        value={referrerAddress}
+                        onChange={(e) => setReferrerAddress(e.target.value)}
+                        className="flex-1 h-10 px-3 py-2 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors outline-none"
+                      />
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {/* Conditional Referral Input - Only show if user doesn't have a referrer */}
-                      {!userStakes?.hasReferrer && (
-                        <div className="p-4 bg-primary/10 rounded-lg border border-primary/30 mb-4">
-                          <Label htmlFor="referrer" className="text-sm font-medium mb-2 block">Add Referrer (Optional)</Label>
-                          <div className="flex gap-2">
-                            <input
-                              id="referrer"
-                              placeholder="Enter referrer address"
-                              value={referrerAddress}
-                              onChange={(e) => setReferrerAddress(e.target.value)}
-                              className="flex-1 h-10 px-3 py-2 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors outline-none"
-                            />
-                          </div>
-                        </div>
-                      )}
-                      
-                      {/* Stake Button */}
-                      <Button
-                        onClick={handleStake}
-                        disabled={stakeMutation.isPending || !stakeAmount || parseFloat(stakeAmount) <= 0}
-                        className="neon-button w-full py-4 rounded-xl text-lg font-bold"
-                        data-testid="button-stake-tokens"
-                      >
-                        {stakeMutation.isPending ? 'Staking...' : `Stake ${COIN_TICKER}`}
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </TabsContent>
 
               <TabsContent value="unstake" className="space-y-6">
@@ -355,7 +407,7 @@ export default function Stake() {
                   <div className="text-center py-8">
                     <Button
                       onClick={connect}
-                      className="neon-button px-32 py-4 rounded-xl text-lg font-bold"
+                      className="neon-button w-3/4 py-6 rounded-xl text-lg font-bold"
                       data-testid="button-connect-wallet-unstake"
                     >
                       Connect Wallet
@@ -410,6 +462,92 @@ export default function Stake() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Validation Dialog */}
+      <Dialog open={showValidationDialog} onOpenChange={setShowValidationDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Confirm Stake Details</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {/* Stake Details */}
+            <div className="space-y-3">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Amount:</span>
+                <span className="text-sm">{stakeAmount} {COIN_TICKER}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Lock Period:</span>
+                <span className="text-sm">{lockPeriod[0]} months</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Estimated APY:</span>
+                <span className="text-sm">{calculateAPY(lockPeriod[0])}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium">Estimated Rewards:</span>
+                <span className="text-sm">
+                  {(Number(stakeAmount) * calculateAPY(lockPeriod[0]) / 100 * lockPeriod[0] / 12).toFixed(2)} {COIN_TICKER}
+                </span>
+              </div>
+            </div>
+
+            {/* Referrer Input - Show if no referrer is set */}
+            {!validationReferrer && (
+              <div className="space-y-2">
+                <Label htmlFor="validation-referrer">Referrer Address (Optional)</Label>
+                <input
+                  id="validation-referrer"
+                  type="text"
+                  placeholder="0x..."
+                  value={validationReferrer}
+                  onChange={(e) => setValidationReferrer(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter a referrer address to earn additional rewards
+                </p>
+              </div>
+            )}
+
+            {/* Show referrer if already set */}
+            {validationReferrer && (
+              <div className="space-y-2">
+                <Label>Referrer Address</Label>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded flex-1 truncate">
+                    {validationReferrer}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setValidationReferrer('')}
+                  >
+                    Change
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="flex space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowValidationDialog(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleConfirmStake}
+              disabled={stakeMutation.isPending}
+              className="w-3/4 mx-auto py-6"
+            >
+              {stakeMutation.isPending ? 'Staking...' : 'Confirm Stake'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

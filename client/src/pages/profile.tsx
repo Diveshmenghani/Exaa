@@ -5,15 +5,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
+import { useContract } from '@/hooks/use-contract';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { User, Referral } from '@shared/schema';
 import ReferralNetwork from '@/components/referral-network';
 import { APP_NAME, COIN_TICKER } from '@/lib/branding';
+import { ethers } from 'ethers';
 
 export default function Profile() {
   const { toast } = useToast();
   const { walletAddress, isConnected } = useWallet();
+  const { getTokenBalance, getTotalStaked, unstake, getUserStakes } = useContract();
   const [referralCode, setReferralCode] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
 
@@ -27,6 +30,46 @@ export default function Profile() {
   const { data: referrals = [], isLoading: referralsLoading } = useQuery<Referral[]>({
     queryKey: ['/api/referrals', user?.id],
     enabled: !!user?.id,
+  });
+
+  // Fetch real token balance from blockchain
+  const { data: realTokenBalance = '0', isLoading: balanceLoading, error: balanceError, refetch: refetchBalance } = useQuery({
+    queryKey: ['tokenBalance', walletAddress],
+    queryFn: async () => {
+      if (!walletAddress || !getTokenBalance) return '0';
+      return await getTokenBalance(walletAddress);
+    },
+    enabled: !!walletAddress && !!getTokenBalance,
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
+    retry: (failureCount, error) => {
+      // Retry up to 3 times with exponential backoff
+      if (failureCount >= 3) return false;
+      
+      // Don't retry for certain error types
+      if (error?.message?.includes('CALL_EXCEPTION') || 
+          error?.message?.includes('historical state')) {
+        return false;
+      }
+      
+      return true;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  });
+
+  // Get total staked from blockchain
+  const { data: totalStakedFromBlockchain, error: stakedError, refetch: refetchStaked } = useQuery({
+    queryKey: ['totalStaked', walletAddress],
+    queryFn: async () => {
+      if (!walletAddress || !getTotalStaked) return '0';
+      return await getTotalStaked(walletAddress);
+    },
+    enabled: !!walletAddress && !!getTotalStaked,
+    refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
+    retry: (failureCount, error) => {
+      if (failureCount >= 3) return false;
+      return true;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
   // Registration mutation
@@ -56,8 +99,21 @@ export default function Profile() {
   const { data: userStakes } = useQuery({
     queryKey: ['userStakes', walletAddress],
     queryFn: async () => {
-      const response = await apiRequest('GET', `/api/stakes/user/${walletAddress}`);
-      return response.json();
+      try {
+        const response = await apiRequest('GET', `/api/stakes/user/${walletAddress}`);
+        const data = await response.json();
+        return data;
+      } catch (error: any) {
+        // If user not found (404), return empty stakes data
+        if (error.status === 404 || error.message?.includes('User not found')) {
+          return {
+            stakes: [],
+            hasReferrer: false,
+            referrer: null
+          };
+        }
+        throw error; // Re-throw other errors
+      }
     },
     enabled: !!walletAddress && !!user
   });
@@ -86,9 +142,47 @@ export default function Profile() {
     },
   });
 
+  // Helper function to find stake index in blockchain
+  const findStakeIndex = async (dbStake: any): Promise<number> => {
+    if (!walletAddress) throw new Error('Wallet not connected');
+    
+    const blockchainStakes = await getUserStakes(walletAddress);
+    
+    // Match by amount and approximate timestamp
+    const dbAmount = parseFloat(dbStake.amount);
+    
+    for (let i = 0; i < blockchainStakes.length; i++) {
+      const blockchainStake = blockchainStakes[i];
+      const blockchainAmount = parseFloat(ethers.utils.formatEther(blockchainStake.amount));
+      
+      // Match by amount (with small tolerance for precision differences)
+      if (Math.abs(blockchainAmount - dbAmount) < 0.001) {
+        return i;
+      }
+    }
+    
+    throw new Error('Could not find matching stake in blockchain');
+  };
+
   // Unstake mutation
   const unstakeMutation = useMutation({
     mutationFn: async (stakeId: string) => {
+      // First get the stake to find the index
+      const dbStake = userStakes?.stakes?.find((s: any) => s.id === stakeId);
+      if (!dbStake) {
+        throw new Error('Stake not found');
+      }
+      
+      // Find the corresponding stake index in the blockchain
+      const stakeIndex = await findStakeIndex(dbStake);
+      
+      // Call the blockchain contract to unstake
+      const contractSuccess = await unstake(stakeIndex);
+      if (!contractSuccess) {
+        throw new Error('Failed to unstake from blockchain contract');
+      }
+      
+      // Then update the database
       const response = await apiRequest('POST', `/api/stakes/${stakeId}/unstake`);
       return response.json();
     },
@@ -148,93 +242,67 @@ export default function Profile() {
   }
 
   // Registration state
-  if (!user && !userLoading) {
-    return (
-      <div className="min-h-screen pt-24 pb-20">
-        <div className="container mx-auto px-6">
-          <div className="text-center mb-16">
-            <h1 className="text-5xl font-bold mb-4">
-              <span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
-                Join the Network
-              </span>
-            </h1>
-            <p className="text-xl text-muted-foreground">Register with a referral code and start earning from day one</p>
-          </div>
+  // if (!user && !userLoading) {
+  //   return (
+  //     <div className="min-h-screen pt-24 pb-20">
+  //       <div className="container mx-auto px-6">
+  //         <div className="text-center mb-16">
+  //           <h1 className="text-5xl font-bold mb-4">
+  //             <span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
+  //               Join the Network
+  //             </span>
+  //           </h1>
+  //           <p className="text-xl text-muted-foreground">Register with a referral code and start earning from day one</p>
+  //         </div>
 
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Registration Form */}
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div>
-                    <Label className="block text-sm font-medium mb-2">Wallet Address</Label>
-                    <Input
-                      type="text"
-                      value={walletAddress || ''}
-                      disabled
-                      className="w-full p-4 bg-muted/20 rounded-xl border border-border"
-                      data-testid="input-wallet-address"
-                    />
-                  </div>
-                  <div>
-                    <Label className="block text-sm font-medium mb-2">Referral Code (Optional)</Label>
-                    <Input
-                      type="text"
-                      placeholder="Enter referral code"
-                      value={referralCode}
-                      onChange={(e) => setReferralCode(e.target.value)}
-                      className="w-full p-4 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors"
-                      data-testid="input-referral-code"
-                    />
-                  </div>
-                  <Button
-                    onClick={handleRegister}
-                    disabled={registerMutation.isPending}
-                    className="neon-button w-full py-4 rounded-xl font-bold"
-                    data-testid="button-register-account"
-                  >
-                    {registerMutation.isPending ? 'Registering...' : 'Register Account'}
-                  </Button>
-                </CardContent>
-              </Card>
+  //         <div className="max-w-4xl mx-auto">
+  //           <div className="grid md:grid-cols-2 gap-8">
+  //             {/* Registration Form */}
+  //             <Card className="glass-card">
+  //               <CardHeader>
+  //                 <CardTitle className="text-2xl font-bold">Create Account</CardTitle>
+  //               </CardHeader>
+  //               <CardContent className="space-y-6">
+  //                 <div>
+  //                   <Label className="block text-sm font-medium mb-2">Wallet Address</Label>
+  //                   <Input
+  //                     type="text"
+  //                     value={walletAddress || ''}
+  //                     disabled
+  //                     className="w-full p-4 bg-muted/20 rounded-xl border border-border"
+  //                     data-testid="input-wallet-address"
+  //                   />
+  //                 </div>
+  //                 <div>
+  //                   <Label className="block text-sm font-medium mb-2">Referral Code (Optional)</Label>
+  //                   <Input
+  //                     type="text"
+  //                     placeholder="Enter referral code"
+  //                     value={referralCode}
+  //                     onChange={(e) => setReferralCode(e.target.value)}
+  //                     className="w-full p-4 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors"
+  //                     data-testid="input-referral-code"
+  //                   />
+  //                 </div>
+  //                 <Button
+  //                   onClick={handleRegister}
+  //                   disabled={registerMutation.isPending}
+  //                   className="neon-button w-full py-4 rounded-xl font-bold"
+  //                   data-testid="button-register-account"
+  //                 >
+  //                   {registerMutation.isPending ? 'Registering...' : 'Register Account'}
+  //                 </Button>
+  //               </CardContent>
+  //             </Card>
 
-              {/* Referral Benefits */}
-              <Card className="glass-card">
-                <CardHeader>
-                  <CardTitle className="text-2xl font-bold">Referral Benefits</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
-                    <span>Level 1</span>
-                    <span className="font-bold text-primary">12%</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
-                    <span>Level 2</span>
-                    <span className="font-bold text-secondary">8%</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
-                    <span>Level 3</span>
-                    <span className="font-bold text-accent">6%</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
-                    <span>Levels 4-5</span>
-                    <span className="font-bold text-green-400">4-2%</span>
-                  </div>
-                  <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg">
-                    <span>Levels 6-25</span>
-                    <span className="font-bold text-yellow-400">1-0.25%</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  //             {/* Referral Benefits */}
+              
+  //           </div>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
   // Loading state
   if (userLoading) {
@@ -265,30 +333,57 @@ export default function Profile() {
 
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Earnings Overview */}
-          <div className="grid lg:grid-cols-2 gap-8">
+          <div className="grid lg:grid-cols-1 gap-8">
             {/* My Earnings */}
             <Card className="glass-card">
               <CardHeader>
                 <CardTitle className="text-2xl font-bold">
                   <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                    My Earnings
+                    Account Information
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="text-center p-6 bg-gradient-to-r from-primary/10 to-secondary/10 rounded-xl">
-                  <div className="text-4xl font-bold mb-2" data-testid="text-total-balance">
-                    {(parseFloat(user?.totalEarned || '0') + parseFloat(user?.referralEarnings || '0')).toLocaleString()} {COIN_TICKER}
-                  </div>
-                  <div className="text-muted-foreground">Total {COIN_TICKER} Balance</div>
-                </div>
+                   <div className="text-4xl font-bold mb-2" data-testid="text-total-balance">
+                     {balanceLoading ? (
+                       <div className="animate-pulse">Loading...</div>
+                     ) : balanceError ? (
+                       <div className="text-orange-500">
+                         <div className="text-2xl">⚠️</div>
+                         <div className="text-sm mt-1">Network Error</div>
+                       </div>
+                     ) : (
+                       `${parseFloat(realTokenBalance).toLocaleString()} ${COIN_TICKER}`
+                     )}
+                   </div>
+                   <div className="text-muted-foreground">
+                     {balanceError ? (
+                       <div className="text-xs text-orange-400">
+                         Unable to fetch balance from blockchain. Please check your network connection.
+                       </div>
+                     ) : (
+                       `Total ${COIN_TICKER} Balance`
+                     )}
+                   </div>
+                 </div>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="text-center p-4 bg-muted/10 rounded-lg">
                     <div className="text-2xl font-bold text-primary mb-1" data-testid="text-staking-earnings">
                       {parseFloat(user?.totalEarned || '0').toLocaleString()}
                     </div>
                     <div className="text-sm text-muted-foreground">From Staking</div>
+                  </div>
+                  <div className="text-center p-4 bg-muted/10 rounded-lg">
+                    <div className="text-2xl font-bold text-secondary mb-1" data-testid="text-total-staked">
+                      {stakedError ? (
+                        <div className="text-orange-500 text-sm">⚠️ Error</div>
+                      ) : (
+                        parseFloat(totalStakedFromBlockchain || user?.totalStaked || '0').toLocaleString()
+                      )}
+                    </div>
+                    <div className="text-sm text-muted-foreground">Total Staked</div>
                   </div>
                   <div className="text-center p-4 bg-muted/10 rounded-lg">
                     <div className="text-2xl font-bold text-secondary mb-1" data-testid="text-referral-earnings-amount">
@@ -332,113 +427,11 @@ export default function Profile() {
             </Card>
 
             {/* My Network */}
-            <Card className="glass-card">
-              <CardHeader>
-                <CardTitle className="text-2xl font-bold">
-                  <span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
-                    My Network
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="text-center p-4 bg-gradient-to-r from-secondary/10 to-accent/10 rounded-xl">
-                  <div className="text-3xl font-bold mb-2" data-testid="text-total-referrals">
-                    {user?.totalReferrals || 0}
-                  </div>
-                  <div className="text-muted-foreground">Total People Referred</div>
-                </div>
-
-                {/* Referral Levels */}
-                <div className="space-y-3">
-                  <h4 className="font-semibold mb-3">Referrals by Level</h4>
-                  {[1, 2, 3, 4, 5].map(level => {
-                    const levelCount = referrals.filter(r => r.level === level).length;
-                    const commissionRate = level === 1 ? 12 : level === 2 ? 8 : level === 3 ? 6 : level === 4 ? 4 : 2;
-                    return (
-                      <div key={level} className="flex justify-between items-center p-3 bg-muted/10 rounded-lg" data-testid={`referral-level-${level}`}>
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center text-sm font-bold">
-                            L{level}
-                          </div>
-                          <span>Level {level}</span>
-                        </div>
-                        <div className="text-right">
-                          <div className="font-bold" data-testid={`level-${level}-count`}>{levelCount} people</div>
-                          <div className="text-sm text-muted-foreground">{commissionRate}% commission</div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {referrals.some(r => r.level > 5) && (
-                    <div className="flex justify-between items-center p-3 bg-muted/10 rounded-lg" data-testid="referral-levels-6-plus">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-r from-accent to-primary rounded-full flex items-center justify-center text-xs font-bold">
-                          6+
-                        </div>
-                        <span>Levels 6-25</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold" data-testid="levels-6-plus-count">{referrals.filter(r => r.level > 5).length} people</div>
-                        <div className="text-sm text-muted-foreground">1-0.25% commission</div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            
           </div>
 
           {/* Profile Stats */}
-          <Card className="glass-card">
-            <CardHeader>
-              <CardTitle className="text-xl font-bold">Account Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid md:grid-cols-4 gap-6">
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-r from-primary to-secondary rounded-full mx-auto mb-3 flex items-center justify-center">
-                    <i className="fas fa-user text-white text-xl"></i>
-                  </div>
-                  <div className="font-bold mb-1" data-testid="text-user-address">
-                    {user?.walletAddress?.substring(0, 6)}...{user?.walletAddress?.substring(user.walletAddress.length - 4)}
-                  </div>
-                  <div className="text-sm text-muted-foreground" data-testid="text-join-date">
-                    Joined {formatDate(user?.createdAt || new Date())}
-                  </div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-r from-secondary to-accent rounded-full mx-auto mb-3 flex items-center justify-center">
-                    <i className="fas fa-coins text-white text-xl"></i>
-                  </div>
-                  <div className="font-bold mb-1" data-testid="text-total-staked">
-                    {parseFloat(user?.totalStaked || '0').toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground">{COIN_TICKER} Staked</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-r from-accent to-primary rounded-full mx-auto mb-3 flex items-center justify-center">
-                    <i className="fas fa-chart-line text-white text-xl"></i>
-                  </div>
-                  <div className="font-bold mb-1 text-primary" data-testid="text-total-earned">
-                    {parseFloat(user?.totalEarned || '0').toLocaleString()}
-                  </div>
-                  <div className="text-sm text-muted-foreground">{COIN_TICKER} Earned</div>
-                </div>
-                
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-r from-primary to-accent rounded-full mx-auto mb-3 flex items-center justify-center">
-                    <i className="fas fa-users text-white text-xl"></i>
-                  </div>
-                  <div className="font-bold mb-1 text-secondary">
-                    {user?.totalReferrals || 0}
-                  </div>
-                  <div className="text-sm text-muted-foreground">Total Referrals</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          
 
           {/* Referral Network Details */}
           {referralsLoading ? (

@@ -81,6 +81,31 @@ export const insertTokenSwapSchema = createInsertSchema(tokenSwaps).omit({
   createdAt: true,
 });
 
+export const User = z.object({
+  id: z.string(),
+  walletAddress: z.string(),
+  referralCode: z.string(),
+  referrerId: z.string().optional(),
+  totalStaked: z.string(),
+  totalEarned: z.string(),
+  referralEarnings: z.string(),
+  totalReferrals: z.number(),
+  tokenBalance: z.string().optional(),
+});
+
+export const Stake = z.object({
+  id: z.string(),
+  userId: z.string(),
+  amount: z.string(),
+  lockPeriodMonths: z.number(),
+  apyRate: z.string(),
+  earnedAmount: z.string(),
+  startDate: z.string(),
+  endDate: z.string(),
+  isActive: z.boolean(),
+  canUnstake: z.boolean(),
+});
+
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Stake = typeof stakes.$inferSelect;

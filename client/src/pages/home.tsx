@@ -8,14 +8,19 @@ import { APP_NAME, COIN_TICKER, STAKED_DERIVATIVE, BRANDING } from '@/lib/brandi
 
 export default function Home() {
   const [stakeAmount, setStakeAmount] = useState(1);
-  const [lockPeriod, setLockPeriod] = useState([12]);
+  const [lockPeriod, setLockPeriod] = useState([1]);
   const [hoveredFeature, setHoveredFeature] = useState<number | null>(null);
 
   // Staking calculations
-  const apy = 2.38;
-  const zePrice = BRANDING.DEFAULT_PRICE_USD;
-  const annualReward = stakeAmount * (apy / 100);
-  const osZEReceived = stakeAmount * 0.94;
+  const getApy = (years: number) => {
+    if (years === 1) return 10;
+    if (years === 2) return 12;
+    if (years === 3) return 15;
+    return 10;
+  };
+
+  const apy = getApy(lockPeriod[0]);
+  const annualReward = (stakeAmount * apy) / 100;
 
   useEffect(() => {
     // Set vibrant gradient background
@@ -88,21 +93,19 @@ export default function Home() {
 
             {/* Right Side - Staking Calculator Widget */}
             <div className="space-y-4">
-              {/* APY and Reward Cards */}
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="bg-white/80 backdrop-blur-md border-white/40 rounded-2xl">
-                  <CardContent className="p-4">
-                    <div className="text-sm text-gray-600 mb-1">APY</div>
+              {/* APY and Reward Card */}
+              <Card className="bg-white/80 backdrop-blur-md border-white/40 rounded-2xl">
+                <CardContent className="p-4">
+                  <div className="flex justify-between items-center">
+                    <div className="text-sm text-gray-600 mb-1">Monthly Return</div>
                     <div className="text-2xl font-bold text-gray-900">{apy}%</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-white/80 backdrop-blur-md border-white/40 rounded-2xl">
-                  <CardContent className="p-4">
-                    <div className="text-sm text-gray-600 mb-1">Proj. annual reward</div>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <div className="text-sm text-gray-600 mb-1">You will receive</div>
                     <div className="text-2xl font-bold text-gray-900">{COIN_TICKER} {annualReward.toFixed(5)}</div>
-                  </CardContent>
-                </Card>
-              </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Main Staking Input */}
               <Card className="bg-white/90 backdrop-blur-md border-white/50 rounded-2xl shadow-xl">
@@ -123,37 +126,31 @@ export default function Home() {
                         <div className="text-2xl font-bold text-gray-900">{COIN_TICKER}</div>
                       </div>
                     </div>
-                    <div className="text-gray-600">$ {(stakeAmount * zePrice).toLocaleString()}</div>
+
                   </div>
 
                   {/* Lock Period Slider */}
                   <div className="space-y-3">
-                    <div className="text-sm text-gray-700 font-medium">Lock Period: {lockPeriod[0]} months</div>
+                    <div className="text-sm text-gray-700 font-medium">Lock Period: {lockPeriod[0]} year(s)</div>
                     <Slider
                       value={lockPeriod}
                       onValueChange={setLockPeriod}
-                      max={36}
+                      max={3}
                       min={1}
                       step={1}
                       className="w-full"
                     />
-                  </div>
-
-                  {/* Reward Info */}
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center text-gray-600">
-                      You will receive
-                      <div className="w-4 h-4 bg-gray-400 rounded-full ml-2 flex items-center justify-center">
-                        <span className="text-xs">ℹ</span>
-                      </div>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>1</span>
+                      <span>2</span>
+                      <span>3</span>
                     </div>
-                    <div className="font-bold text-gray-900">{osZEReceived.toFixed(2)} {STAKED_DERIVATIVE}</div>
                   </div>
 
                   {/* Stake Button */}
                   <Link href="/stake">
                     <Button 
-                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-4 rounded-full text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                      className="w-3/4 mx-auto bg-black text-white font-semibold py-8 rounded-full text-xl shadow-lg hover:shadow-xl transition-all duration-300 mt-4"
                       data-testid="button-stake"
                     >
                       Stake

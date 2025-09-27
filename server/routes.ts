@@ -348,6 +348,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(400).json({ message: error instanceof Error ? error.message : "Invalid data" });
     }
   });
+
+  // Admin endpoint to recalculate total referrals (fix incorrect counts)
+  app.post("/api/admin/recalculate-referrals", async (req, res) => {
+    try {
+      // Get all users
+      const allUsers = await storage.getAllUsers();
+      
+      for (const user of allUsers) {
+        // Count only level 1 (direct) referrals for this user
+        const directReferrals = await storage.getReferralsByReferrerId(user.id);
+        const level1Count = directReferrals.filter(r => r.level === 1).length;
+        
+        // Update the user's totalReferrals
+        await storage.updateUser(user.id, {
+          totalReferrals: level1Count,
+        });
+      }
+      
+      res.json({ message: "Total referrals recalculated successfully" });
+    } catch (error) {
+      console.error("Error recalculating referrals:", error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
   
   const httpServer = createServer(app);
   return httpServer;
@@ -367,12 +391,14 @@ async function createReferralChain(userId: string, referrerId: string, currentLe
     commissionRate: commissionData.rate.toString(),
   });
   
-  // Update referrer's total referrals
+  // Update referrer's total referrals (only for direct referrals - level 1)
   const referrer = await storage.getUser(referrerId);
   if (referrer) {
-    await storage.updateUser(referrerId, {
-      totalReferrals: (referrer.totalReferrals || 0) + 1,
-    });
+    if (currentLevel === 1) {
+      await storage.updateUser(referrerId, {
+        totalReferrals: (referrer.totalReferrals || 0) + 1,
+      });
+    }
     
     // Continue chain to next level
     if (referrer.referrerId) {

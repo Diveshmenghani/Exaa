@@ -3,11 +3,12 @@ import { ethers } from 'ethers';
 import { useWallet } from './use-wallet';
 import ExaaStakingABI from '../lib/contracts/ExaaStaking.json';
 import ExaaSwapABI from '../lib/contracts/ExaaSwap.json';
+import CoinABI from '../lib/contracts/coin.json';
 
 // Contract addresses for Holesky testnet
-const EXAA_STAKING_ADDRESS = '0x5BF66975653919bb035A7c9f0b948D5B5B64ef8c'; // Holesky testnet staking contract
-const EXAA_TOKEN_ADDRESS = '0x083E7858e8539bF642d69CBba008675eABb84298'; // Holesky testnet token address
-const EXAA_SWAP_ADDRESS = '0x0000000000000000000000000000000000000000'; // Swap functionality will be added later
+const EXAA_STAKING_ADDRESS = '0x6e24A5Ec49aE76Cd720FB6550aA0a1D57C823e0F'; // Holesky testnet staking contract
+const EXAA_TOKEN_ADDRESS = '0x00140Dc2155aA4197B88464aC8fee02D161f76fa'; // Holesky testnet token address
+const EXAA_SWAP_ADDRESS = '0x373952976f26481b914962bc28f6F08964E8339b'; // Swap functionality will be added later
 const USDT_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'; // USDT on Holesky (to be added later)
 
 interface ContractContextType {
@@ -17,12 +18,18 @@ interface ContractContextType {
   usdtContract: ethers.Contract | null;
   isLoading: boolean;
   error: string | null;
+  // Token contract functions
+  getTokenBalance: (address: string) => Promise<string>;
+  checkContractDeployment: () => Promise<boolean>;
   // Staking contract functions
-  stake: (amount: string, lockYears: number, referrer: string) => Promise<boolean>;
-  addReferrer: (referrer: string) => Promise<boolean>;
-  getUserInfo: (address: string) => Promise<any>;
   approveTokens: (amount: string) => Promise<boolean>;
   approveAndStake: (amount: string, lockYears: number, referrer: string) => Promise<boolean>;
+  stake: (amount: string, lockYears: number, referrer: string) => Promise<boolean>;
+  unstake: (stakeIndex: number) => Promise<boolean>;
+  addReferrer: (referrer: string) => Promise<boolean>;
+  getUserInfo: (address: string) => Promise<any>;
+  getTotalStaked: (address: string) => Promise<string>;
+  getUserStakes: (address: string) => Promise<any[]>;
   // Swap contract functions
   buyTokens: (usdtAmount: string, deadline: number) => Promise<boolean>;
   sellTokens: (exaaAmount: string, deadline: number) => Promise<boolean>;
@@ -75,7 +82,7 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
           
           const newTokenContract = new ethers.Contract(
             EXAA_TOKEN_ADDRESS,
-            ERC20_ABI,
+            CoinABI.abi,
             signer
           );
           
@@ -113,143 +120,9 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     initializeContracts();
   }, [signer, isConnected, isHoleskyNetwork, switchToHoleskyNetwork]);
 
-  // Combined approve and stake function
-  const approveAndStake = async (amount: string, lockYears: number, referrer: string): Promise<boolean> => {
-    if (!tokenContract || !stakingContract || !isConnected) {
-      setError('Wallet not connected or contracts not initialized');
-      return false;
-    }
 
-    // Ensure we're on Holesky network
-    if (!isHoleskyNetwork) {
-      try {
-        const switched = await switchToHoleskyNetwork();
-        if (!switched) {
-          setError('Please switch to Holesky testnet to stake tokens');
-          return false;
-        }
-      } catch (err: any) {
-        console.error('Error switching to Holesky:', err);
-        setError('Failed to switch to Holesky testnet');
-        return false;
-      }
-    }
 
-    try {
-      setIsLoading(true);
-      
-      // Validate and format amount
-      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-        setError('Invalid amount');
-        setIsLoading(false);
-        return false;
-      }
-      
-      // Convert string amount to Wei (proper format for contract)
-      const amountInWei = ethers.utils.parseEther(amount.toString().trim());
-      
-      // Validate lock period (must be positive integer)
-      if (!Number.isInteger(lockYears) || lockYears <= 0) {
-        setError('Lock period must be a positive integer');
-        setIsLoading(false);
-        return false;
-      }
-      
-      // Ensure referrer address is valid
-      const formattedReferrer = referrer && referrer !== '0x0000000000000000000000000000000000000000' 
-        ? ethers.utils.getAddress(referrer) // Normalize address format
-        : '0x0000000000000000000000000000000000000000';
-      
-      console.log('Approving tokens:', {
-        amount: amount,
-        amountInWei: amountInWei.toString(),
-        stakingContract: EXAA_STAKING_ADDRESS
-      });
-      
-      // First approve tokens
-      const approveTx = await tokenContract.approve(EXAA_STAKING_ADDRESS, amountInWei);
-      await approveTx.wait();
-      
-      console.log('Tokens approved, now staking with parameters:', {
-        amount: amount,
-        amountInWei: amountInWei.toString(),
-        lockYears: lockYears,
-        referrer: formattedReferrer
-      });
-      
-      // Then stake tokens
-      const stakeTx = await stakingContract.stake(amountInWei, lockYears, formattedReferrer);
-      await stakeTx.wait();
-      
-      setIsLoading(false);
-      return true;
-    } catch (err: any) {
-      console.error('Error in approve and stake process:', err);
-      
-      // Check if user rejected transaction
-      if (err.code === 4001 || err.message?.includes('user rejected')) {
-        setError('Transaction was cancelled by user');
-      } else {
-        setError(err.message || 'Failed to complete staking process');
-      }
-      
-      setIsLoading(false);
-      return false;
-    }
-  };
 
-  // Approve tokens for staking on Holesky testnet
-  const approveTokens = async (amount: string): Promise<boolean> => {
-    if (!tokenContract || !isConnected) {
-      setError('Wallet not connected or contract not initialized');
-      return false;
-    }
-
-    // Ensure we're on Holesky network
-    if (!isHoleskyNetwork) {
-      try {
-        const switched = await switchToHoleskyNetwork();
-        if (!switched) {
-          setError('Please switch to Holesky testnet to approve tokens');
-          return false;
-        }
-      } catch (err: any) {
-        console.error('Error switching to Holesky:', err);
-        setError('Failed to switch to Holesky testnet');
-        return false;
-      }
-    }
-
-    try {
-      setIsLoading(true);
-      
-      // Validate amount
-      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-        setError('Invalid token amount for approval');
-        setIsLoading(false);
-        return false;
-      }
-      
-      // Convert to Wei (proper format for contract)
-      const amountInWei = ethers.utils.parseEther(amount.toString().trim());
-      
-      console.log('Approving tokens:', {
-        amount: amount,
-        amountInWei: amountInWei.toString(),
-        stakingContract: EXAA_STAKING_ADDRESS
-      });
-      
-      const tx = await tokenContract.approve(EXAA_STAKING_ADDRESS, amountInWei);
-      await tx.wait();
-      setIsLoading(false);
-      return true;
-    } catch (err: any) {
-      console.error('Error approving tokens:', err);
-      setError(err.message || 'Failed to approve tokens');
-      setIsLoading(false);
-      return false;
-    }
-  };
 
   // Stake tokens on Holesky testnet
   const stake = async (amount: string, lockYears: number, referrer: string): Promise<boolean> => {
@@ -317,6 +190,78 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Approve tokens for staking
+  const approveTokens = async (amount: string): Promise<boolean> => {
+    if (!tokenContract || !isConnected) {
+      setError('Wallet not connected or contract not initialized');
+      return false;
+    }
+
+    // Ensure we're on Holesky network
+    if (!isHoleskyNetwork) {
+      try {
+        const switched = await switchToHoleskyNetwork();
+        if (!switched) {
+          setError('Please switch to Holesky testnet to approve tokens');
+          return false;
+        }
+      } catch (err: any) {
+        console.error('Error switching to Holesky:', err);
+        setError('Failed to switch to Holesky testnet');
+        return false;
+      }
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Validate and format amount
+      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
+        setError('Invalid approval amount');
+        setIsLoading(false);
+        return false;
+      }
+      
+      // Convert string amount to Wei
+      const amountInWei = ethers.utils.parseEther(amount.toString().trim());
+      
+      console.log('Approving tokens:', {
+        amount: amount,
+        amountInWei: amountInWei.toString(),
+        spender: EXAA_STAKING_ADDRESS
+      });
+      
+      const tx = await tokenContract.approve(EXAA_STAKING_ADDRESS, amountInWei);
+      await tx.wait();
+      setIsLoading(false);
+      return true;
+    } catch (err: any) {
+      console.error('Error approving tokens:', err);
+      setError(err.message || 'Failed to approve tokens');
+      setIsLoading(false);
+      return false;
+    }
+  };
+
+  // Combined approve and stake function
+  const approveAndStake = async (amount: string, lockYears: number, referrer: string): Promise<boolean> => {
+    try {
+      // First approve tokens
+      const approvalSuccess = await approveTokens(amount);
+      if (!approvalSuccess) {
+        return false;
+      }
+      
+      // Then stake tokens
+      const stakeSuccess = await stake(amount, lockYears, referrer);
+      return stakeSuccess;
+    } catch (err: any) {
+      console.error('Error in approve and stake:', err);
+      setError(err.message || 'Failed to approve and stake tokens');
+      return false;
+    }
+  };
+
   // Add referrer on Holesky testnet
   const addReferrer = async (referrer: string): Promise<boolean> => {
     if (!stakingContract || !isConnected) {
@@ -348,6 +293,42 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error('Error adding referrer:', err);
       setError(err.message || 'Failed to add referrer');
+      setIsLoading(false);
+      return false;
+    }
+  };
+
+  // Unstake tokens from Holesky testnet
+  const unstake = async (stakeIndex: number): Promise<boolean> => {
+    if (!stakingContract || !isConnected) {
+      setError('Wallet not connected or contract not initialized');
+      return false;
+    }
+
+    // Ensure we're on Holesky network
+    if (!isHoleskyNetwork) {
+      try {
+        const switched = await switchToHoleskyNetwork();
+        if (!switched) {
+          setError('Please switch to Holesky testnet to unstake');
+          return false;
+        }
+      } catch (err: any) {
+        console.error('Error switching to Holesky:', err);
+        setError('Failed to switch to Holesky testnet');
+        return false;
+      }
+    }
+
+    try {
+      setIsLoading(true);
+      const tx = await stakingContract.unstake(stakeIndex);
+      await tx.wait();
+      setIsLoading(false);
+      return true;
+    } catch (err: any) {
+      console.error('Error unstaking:', err);
+      setError(err.message || 'Failed to unstake tokens');
       setIsLoading(false);
       return false;
     }
@@ -391,6 +372,84 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       setError(err.message || 'Failed to get user information');
       setIsLoading(false);
       return null;
+    }
+  };
+
+  // Get total staked amount for a user
+  const getTotalStaked = async (address: string): Promise<string> => {
+    if (!stakingContract || !isConnected) {
+      setError('Wallet not connected or contract not initialized');
+      return '0';
+    }
+
+    // Ensure we're on Holesky network
+    if (!isHoleskyNetwork) {
+      try {
+        const switched = await switchToHoleskyNetwork();
+        if (!switched) {
+          setError('Please switch to Holesky testnet to get total staked');
+          return '0';
+        }
+      } catch (err: any) {
+        console.error('Error switching to Holesky:', err);
+        setError('Failed to switch to Holesky testnet');
+        return '0';
+      }
+    }
+
+    try {
+      setIsLoading(true);
+      // Get user info which includes totalStaked
+      const userInfo = await stakingContract.getUserInfo(address);
+      setIsLoading(false);
+      
+      // Return the totalStaked from the contract
+      return ethers.utils.formatEther(userInfo.totalStaked);
+    } catch (err: any) {
+      console.error('Error getting total staked:', err);
+      setError(err.message || 'Failed to get total staked amount');
+      setIsLoading(false);
+      // Return "0" instead of throwing to prevent UI crashes
+      return "0";
+    }
+  };
+
+  // Get user stakes from blockchain
+  const getUserStakes = async (address: string): Promise<any[]> => {
+    if (!stakingContract || !isConnected) {
+      setError('Wallet not connected or contract not initialized');
+      return [];
+    }
+
+    // Ensure we're on Holesky network
+    if (!isHoleskyNetwork) {
+      try {
+        const switched = await switchToHoleskyNetwork();
+        if (!switched) {
+          setError('Please switch to Holesky testnet to get stakes');
+          return [];
+        }
+      } catch (err: any) {
+        console.error('Error switching to Holesky:', err);
+        setError('Failed to switch to Holesky testnet');
+        return [];
+      }
+    }
+
+    try {
+      setIsLoading(true);
+      // Get user info which includes stakes array
+      const userInfo = await stakingContract.getUserInfo(address);
+      setIsLoading(false);
+      
+      // Return the stakes array from the contract
+      return userInfo.stakes || [];
+    } catch (err: any) {
+      console.error('Error getting user stakes:', err);
+      setError(err.message || 'Failed to get user stakes');
+      setIsLoading(false);
+      // Return empty array instead of throwing to prevent UI crashes
+      return [];
     }
   };
 
@@ -484,25 +543,99 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Check if contracts are properly deployed
+  const checkContractDeployment = async (): Promise<boolean> => {
+    if (!signer || !isHoleskyNetwork) {
+      return false;
+    }
+
+    try {
+      const provider = signer.provider;
+      
+      // Check token contract
+      const tokenCode = await provider!.getCode(EXAA_TOKEN_ADDRESS);
+      if (tokenCode === '0x') {
+        console.error('Token contract not deployed at:', EXAA_TOKEN_ADDRESS);
+        return false;
+      }
+      
+      // Check staking contract
+      const stakingCode = await provider!.getCode(EXAA_STAKING_ADDRESS);
+      if (stakingCode === '0x') {
+        console.error('Staking contract not deployed at:', EXAA_STAKING_ADDRESS);
+        return false;
+      }
+      
+      console.log('All contracts verified as deployed');
+      return true;
+    } catch (err: any) {
+      console.error('Error checking contract deployment:', err);
+      return false;
+    }
+  };
+
+  // Get token balance for a specific address
+  const getTokenBalance = async (address: string): Promise<string> => {
+    if (!tokenContract || !address) {
+      return '0';
+    }
+
+    try {
+      // First check if we're connected to the right network
+      if (!isHoleskyNetwork) {
+        console.warn('Not connected to Holesky network, cannot fetch balance');
+        return '0';
+      }
+
+      // Check if the contract exists by getting its code
+      const provider = tokenContract.provider;
+      const code = await provider.getCode(EXAA_TOKEN_ADDRESS);
+      
+      if (code === '0x') {
+        console.error('Token contract not deployed at address:', EXAA_TOKEN_ADDRESS);
+        return '0';
+      }
+
+      const balance = await tokenContract.balanceOf(address);
+      return ethers.utils.formatEther(balance);
+    } catch (err: any) {
+      console.error('Error fetching token balance:', err);
+      
+      // Handle specific error types
+      if (err.code === 'CALL_EXCEPTION') {
+        console.error('Contract call failed - contract may not exist or network issues');
+      } else if (err.message?.includes('historical state')) {
+        console.error('RPC provider historical state error - trying again later');
+      }
+      
+      return '0';
+    }
+  };
+
   return (
     <ContractContext.Provider
       value={{
-        stakingContract,
-        tokenContract,
-        swapContract,
-        usdtContract,
-        isLoading,
-        error,
-        stake,
-        addReferrer,
-        getUserInfo,
-        approveTokens,
-        approveAndStake,
-        buyTokens,
-        sellTokens,
-        approveUSDT,
-        approveExaaForSelling
-      }}
+          stakingContract,
+          tokenContract,
+          swapContract,
+          usdtContract,
+          isLoading,
+          error,
+          getTokenBalance,
+          checkContractDeployment,
+          approveTokens,
+          approveAndStake,
+          stake,
+          unstake,
+          addReferrer,
+          getUserInfo,
+          getTotalStaked,
+          getUserStakes,
+          buyTokens,
+          sellTokens,
+          approveUSDT,
+          approveExaaForSelling,
+        }}
     >
       {children}
     </ContractContext.Provider>

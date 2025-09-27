@@ -4,14 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
+import { useContract } from '@/hooks/use-contract';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Stake, ContractSettings } from '@shared/schema';
 import { COIN_TICKER } from '@/lib/branding';
+import { ethers } from 'ethers';
 
 export default function Unstake() {
   const { toast } = useToast();
   const { walletAddress, isConnected } = useWallet();
+  const { unstake, getUserStakes } = useContract();
 
   const { data: stakes = [], isLoading } = useQuery<Stake[]>({
     queryKey: ['/api/stakes/user', walletAddress],
@@ -22,8 +25,46 @@ export default function Unstake() {
     queryKey: ['/api/contract/settings'],
   });
 
+  // Helper function to find stake index in blockchain
+  const findStakeIndex = async (dbStake: any): Promise<number> => {
+    if (!walletAddress) throw new Error('Wallet not connected');
+    
+    const blockchainStakes = await getUserStakes(walletAddress);
+    
+    // Match by amount and approximate timestamp
+    const dbAmount = parseFloat(dbStake.amount);
+    
+    for (let i = 0; i < blockchainStakes.length; i++) {
+      const blockchainStake = blockchainStakes[i];
+      const blockchainAmount = parseFloat(ethers.utils.formatEther(blockchainStake.amount));
+      
+      // Match by amount (with small tolerance for precision differences)
+      if (Math.abs(blockchainAmount - dbAmount) < 0.001) {
+        return i;
+      }
+    }
+    
+    throw new Error('Could not find matching stake in blockchain');
+  };
+
   const unstakeMutation = useMutation({
     mutationFn: async (stakeId: string) => {
+      // First get the stake to find the index
+      const dbStake = stakes.find(s => s.id === stakeId);
+      if (!dbStake) {
+        throw new Error('Stake not found');
+      }
+      
+      // Find the corresponding stake index in the blockchain
+      const stakeIndex = await findStakeIndex(dbStake);
+      
+      // Call the blockchain contract to unstake
+      const contractSuccess = await unstake(stakeIndex);
+      if (!contractSuccess) {
+        throw new Error('Failed to unstake from blockchain contract');
+      }
+      
+      // Then update the database
       const response = await apiRequest('POST', `/api/stakes/${stakeId}/unstake`, {});
       return response.json();
     },
