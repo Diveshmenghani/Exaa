@@ -412,7 +412,8 @@ export default function Profile() {
                   </Button>
                   <Button
                     onClick={() => {
-                      const unstakableStake = userStakes?.find((stake: any) => stake.canUnstake && stake.isActive);
+                      const stakes = userStakes?.stakes || [];
+                      const unstakableStake = stakes.find((stake: any) => stake.canUnstake && stake.isActive);
                       if (!unstakableStake) {
                         toast({
                           title: 'No Unstakable Stakes',
@@ -423,7 +424,7 @@ export default function Profile() {
                       }
                       unstakeMutation.mutate(unstakableStake.id);
                     }}
-                    disabled={unstakeMutation.isPending || !userStakes?.some((stake: any) => stake.canUnstake && stake.isActive)}
+                    disabled={unstakeMutation.isPending || !userStakes?.stakes?.some((stake: any) => stake.canUnstake && stake.isActive)}
                     variant="outline"
                     className="w-full py-3 rounded-lg border-primary/50 hover:border-primary"
                     data-testid="button-unstake-tokens"
