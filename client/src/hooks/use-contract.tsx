@@ -49,7 +49,7 @@ const handleRpcError = (error: any, context: string): string => {
 };
 
 // Utility function to retry contract calls with exponential backoff
-const retryContractCall = async <T>(
+const retryContractCall = async <T,>(
   fn: () => Promise<T>,
   maxRetries: number = 3,
   baseDelay: number = 1000,
@@ -1044,6 +1044,9 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       
       // Verify contract exists at the address
+      if (!signer.provider) {
+        throw new Error('Provider not available');
+      }
       const code = await signer.provider.getCode(EXAA_SWAP_ADDRESS);
       if (code === '0x' || code === '0x0') {
         throw new Error(`No contract found at address ${EXAA_SWAP_ADDRESS}`);
@@ -1112,6 +1115,9 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       
       // Verify contract exists at the address
+      if (!signer.provider) {
+        throw new Error('Provider not available');
+      }
       const code = await signer.provider.getCode(EXAA_SWAP_ADDRESS);
       if (code === '0x' || code === '0x0') {
         throw new Error(`No contract found at address ${EXAA_SWAP_ADDRESS}`);
@@ -1275,7 +1281,7 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       };
       
       // Sign the typed data
-      const signature = await signer?._signTypedData(domain, types, message);
+      const signature = await (signer as any)?._signTypedData(domain, types, message);
       
       // Split the signature
       const sig = ethers.utils.splitSignature(signature);
@@ -1297,6 +1303,7 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       if (!swapContract) return 18; // Default to 18 if contract not available
       
       // Try to get decimals from the stablecoin contract
+      if (!signer) return 18;
       const stablecoinContract = new ethers.Contract(stablecoinAddress, ERC20_ABI, signer);
       return await stablecoinContract.decimals();
     } catch (error) {
@@ -1472,7 +1479,7 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
         500, // Shorter delay
         "Getting ZE price"
       );
-      return ethers.utils.formatUnits(zePriceWei, 18);
+      return ethers.utils.formatUnits(zePriceWei as ethers.BigNumberish, 18);
     } catch (error: any) {
       const errorMessage = handleRpcError(error, "Error getting ZE price");
       console.warn(errorMessage, "- Using fallback price");
@@ -1515,11 +1522,11 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
                 `Checking stablecoin ${coin.symbol}`
               );
               
-              if (stablecoinInfo && stablecoinInfo.isSupported) {
+              if (stablecoinInfo && (stablecoinInfo as any).isSupported) {
                 return {
                   address: coin.address,
                   symbol: coin.symbol,
-                  decimals: stablecoinInfo.decimals || coin.decimals
+                  decimals: (stablecoinInfo as any).decimals || coin.decimals
                 };
               }
               // If not supported by contract, still include it in fallback mode

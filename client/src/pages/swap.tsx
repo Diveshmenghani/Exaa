@@ -80,7 +80,7 @@ export default function Swap() {
         // Fetch supported stablecoins from contract
         const stablecoins = await getStablecoinList();
         if (stablecoins && stablecoins.length > 0) {
-          const formattedStablecoins = stablecoins.map(coin => {
+          const formattedStablecoins = stablecoins.map((coin: {address: string, symbol: string, decimals: number}) => {
             // Map colors based on symbol or use default colors
             let color = 'bg-blue-500';
             let icon = coin.symbol.charAt(0);

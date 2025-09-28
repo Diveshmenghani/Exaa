@@ -219,10 +219,3 @@ export function useWallet() {
   }
   return context;
 }
-
-// Add this to global Window interface
-declare global {
-  interface Window {
-    ethereum?: any;
-  }
-}
