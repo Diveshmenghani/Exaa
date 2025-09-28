@@ -25,16 +25,19 @@ const handleRpcError = (error: any, context: string): string => {
   
   if (error?.code === 'CALL_EXCEPTION') {
     if (error?.error?.data?.message?.includes('historical state')) {
-      return `Network issue: Historical state not available. Please try again or switch to a different RPC endpoint.`;
+      return `Network issue: Historical state not available. Try refreshing or switching RPC endpoint.`;
     }
-    if (error?.data === '0x') {
-      return `Contract call failed: The contract may not be deployed or the function doesn't exist.`;
+    if (error?.data === '0x' || error?.message?.includes('missing revert data')) {
+      return `Contract interaction failed. Ensure you're on Holesky testnet and try refreshing.`;
+    }
+    if (error?.message?.includes('execution reverted')) {
+      return `Transaction would fail: ${error?.reason || 'Contract execution reverted'}`;
     }
     return `Contract call failed: ${error?.reason || 'Transaction reverted without a reason'}`;
   }
   
-  if (error?.code === -32603) {
-    return `RPC Error: ${error?.message || 'Internal JSON-RPC error'}. Please try again.`;
+  if (error?.code === -32603 || error?.message?.includes('Internal JSON-RPC error')) {
+    return `RPC connection issue. Try refreshing the page or check your network connection.`;
   }
   
   if (error?.code === 'INSUFFICIENT_FUNDS') {
@@ -42,7 +45,11 @@ const handleRpcError = (error: any, context: string): string => {
   }
   
   if (error?.code === 'NETWORK_ERROR') {
-    return `Network connection error. Please check your internet connection and try again.`;
+    return `Network connection error. Check your internet connection and try again.`;
+  }
+  
+  if (error?.code === 4001) {
+    return `Transaction rejected by user.`;
   }
   
   return error?.message || `An error occurred in ${context}`;
@@ -1358,6 +1365,22 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
         v, r, s
       });
       
+      // Estimate gas first to catch potential failures
+      try {
+        await swapContract.estimateGas.buyZeWithPermit(
+          stablecoinAddress,
+          stablecoinAmountWei,
+          minZeAmountWei,
+          deadline,
+          v,
+          r,
+          s
+        );
+      } catch (gasError: any) {
+        console.error('Gas estimation failed:', gasError);
+        throw new Error(`Transaction would fail: ${gasError?.reason || gasError?.message || 'Gas estimation failed'}`);
+      }
+      
       // Call the buyZeWithPermit function
       const tx = await swapContract.buyZeWithPermit(
         stablecoinAddress,
@@ -1367,7 +1390,7 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
         v,
         r,
         s,
-        { gasLimit: 500000 }
+        { gasLimit: 600000 } // Increased gas limit
       );
       
       // Wait for transaction to be mined

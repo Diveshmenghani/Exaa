@@ -23,8 +23,8 @@ export default function Home() {
   const annualReward = (stakeAmount * apy) / 100;
 
   useEffect(() => {
-    // Set vibrant gradient background
-    document.body.style.background = 'linear-gradient(135deg, #ec4899 0%, #8b5cf6 50%, #3b82f6 100%)';
+    // Set vibrant gradient background to match new logo
+    document.body.style.background = 'linear-gradient(135deg, #000000 0%, #1a0a2e 20%, #16213e 40%, #0f3460 60%, #0e4b99 80%, #2e86c1 100%)';
     return () => {
       document.body.style.background = '';
     };
@@ -148,14 +148,16 @@ export default function Home() {
                   </div>
 
                   {/* Stake Button */}
-                  <Link href="/stake">
-                    <Button 
-                      className="w-3/4 mx-auto bg-black text-white font-semibold py-8 rounded-full text-xl shadow-lg hover:shadow-xl transition-all duration-300 mt-4"
-                      data-testid="button-stake"
-                    >
-                      Stake
-                    </Button>
-                  </Link>
+                  <div className="flex justify-center">
+                    <Link href="/stake">
+                      <Button 
+                        className="neon-button w-auto px-16 py-8 text-white font-semibold rounded-full text-xl shadow-lg hover:shadow-xl transition-all duration-300 mt-4"
+                        data-testid="button-stake"
+                      >
+                        Stake
+                      </Button>
+                    </Link>
+                  </div>
                 </CardContent>
               </Card>
             </div>

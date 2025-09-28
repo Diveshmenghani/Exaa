@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +15,14 @@ import { ethers } from 'ethers';
 
 export default function Stake() {
   const { toast } = useToast();
+  
+  useEffect(() => {
+    // Set gradient background to match new logo
+    document.body.style.background = 'linear-gradient(135deg, #000000 0%, #1a0a2e 20%, #16213e 40%, #0f3460 60%, #0e4b99 80%, #2e86c1 100%)';
+    return () => {
+      document.body.style.background = '';
+    };
+  }, []);
   const { walletAddress, isConnected, connect } = useWallet();
   const { approveAndStake, unstake, getUserStakes, isLoading, error } = useContract();
   const [stakeAmount, setStakeAmount] = useState('');

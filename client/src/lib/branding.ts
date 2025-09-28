@@ -1,5 +1,5 @@
 // Centralized branding configuration for Zeritheum
-import logoPath from '@assets/image_1758810203765.png';
+import logoPath from '@assets/d1b33569-16d3-4640-9f6d-ec72ca8b6cb2_removalai_preview_1759076757315.png';
 
 export const BRANDING = {
   APP_NAME: 'Zeritheum',

@@ -1,0 +1,18 @@
+Error checking stablecoin 0xd718826bbc28e61dc93aacae04711c8e755b4915: Error: missing revert data in call exception; Transaction reverted without a reason string [ See: https://links.ethers.org/v5-errors-CALL_EXCEPTION ] (data="0x", transaction={"from":"0x88a61A16025F4762fe6379b61Ea9f6C2D1C17044","to":"0x2Ca330C1F35579AA9f7e5d34D6E173d3a87Ab24B","data":"0xbf7d9119000000000000000000000000d718826bbc28e61dc93aacae04711c8e755b4915","accessList":null}, error={"code":-32603,"message":"Internal JSON-RPC error.","data":{"code":-32000,"message":"historical state 275238ecc798320657355f5b778f45ac399f5d133a11f12f530207973bf11ae2 is not available","cause":null},"stack":"{\n  \"code\": -32603,\n  \"message\": \"Internal JSON-RPC error.\",\n  \"data\": {\n    \"code\": -32000,\n    \"message\": \"historical state 275238ecc798320657355f5b778f45ac399f5d133a11f12f530207973bf11ae2 is not available\",\n    \"cause\": null\n  },\n  \"stack\": \"Error: Internal JSON-RPC error.\\n    at new o (chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/common-2.js:3:5698)\\n    at a (chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/common-2.js:3:8789)\\n    at Object.internal (chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/common-2.js:3:9398)\\n    at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/common-1.js:1:253444\\n    at async chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/common-1.js:3:79573\"\n}\n  at new o (chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/common-2.js:3:5698)\n  at a (chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/common-2.js:3:8789)\n  at Object.internal (chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/common-2.js:3:9398)\n  at chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/common-1.js:1:253444\n  at async chrome-extension://nkbihfbeogaeaoehlefnkodbefgpgknn/common-1.js:3:79573"}, code=CALL_EXCEPTION, version=providers/5.8.0)
+    at _Logger.makeError (ethers.js?v=6a25deea:6680:19)
+    at _Logger.throwError (ethers.js?v=6a25deea:6689:16)
+    at checkError (ethers.js?v=6a25deea:19723:14)
+    at Web3Provider.<anonymous> (ethers.js?v=6a25deea:20217:16)
+    at Generator.throw (<anonymous>)
+    at rejected (ethers.js?v=6a25deea:19676:32)
+handleRpcError @ use-contract.tsx:24
+use-contract.tsx:1540 Network issue: Historical state not available. Please try again or switch to a different RPC endpoint.
+(anonymous) @ use-contract.tsx:1540
+swap.tsx:108 Stablecoin list fetched from contract: Array(3)
+inpage.js:1 MetaMask - RPC Error: Internal JSON-RPC error. Object
+(anonymous) @ inpage.js:1
+use-contract.tsx:24 Error fetching token balance: Object
+handleRpcError @ use-contract.tsx:24
+use-contract.tsx:961 RPC Error: Internal JSON-RPC error.. Please try again.
+getTokenBalance @ use-contract.tsx:961
+swap.tsx:115 ZE balance fetched: 0
