@@ -1,5 +1,5 @@
 // Centralized branding configuration for Zeritheum
-import logoPath from '@assets/WhatsApp Image 2025-09-24 at 20.34.41_2f4382c2_1758811844549.jpg';
+import logoPath from '@assets/image_1758810203765.png';
 
 export const BRANDING = {
   APP_NAME: 'Zeritheum',

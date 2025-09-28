@@ -19,6 +19,13 @@ const WalletContext = createContext<WalletContextType | undefined>(undefined);
 const HOLESKY_CHAIN_ID = '0x4268'; // Chain ID for Holesky testnet (decimal: 17000)
 const HOLESKY_RPC_URL = 'https://ethereum-holesky-rpc.publicnode.com';
 
+// Fallback RPC URLs for better reliability
+const HOLESKY_RPC_FALLBACKS = [
+  'https://ethereum-holesky-rpc.publicnode.com',
+  'https://holesky.drpc.org',
+  'https://rpc.holesky.ethpandaops.io'
+];
+
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
   const [walletAddress, setWalletAddress] = useState<string | null>(null);
@@ -95,7 +102,7 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
                   symbol: 'ETH',
                   decimals: 18,
                 },
-                rpcUrls: [HOLESKY_RPC_URL],
+                rpcUrls: HOLESKY_RPC_FALLBACKS,
                 blockExplorerUrls: ['https://holesky.etherscan.io/'],
               },
             ],

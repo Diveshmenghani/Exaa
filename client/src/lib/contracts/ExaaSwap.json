@@ -1,26 +1,267 @@
 {
-  "abi": [
+  "abi":[
 	{
-		"inputs": [],
-		"name": "decimals",
-		"outputs": [
+		"inputs": [
 			{
+				"internalType": "address",
+				"name": "_zeTokenAddress",
+				"type": "address"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "recipient",
+				"type": "address"
+			}
+		],
+		"name": "ContractShutdown",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amount",
+				"type": "uint256"
+			}
+		],
+		"name": "OwnerWithdrawal",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "previousOwner",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "OwnershipTransferred",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "Paused",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "newPrice",
+				"type": "uint256"
+			}
+		],
+		"name": "PriceUpdated",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			},
+			{
+				"indexed": false,
 				"internalType": "uint8",
-				"name": "",
+				"name": "decimals",
 				"type": "uint8"
 			}
 		],
-		"stateMutability": "view",
+		"name": "StablecoinAdded",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "token",
+				"type": "address"
+			}
+		],
+		"name": "StablecoinRemoved",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "user",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "tokenIn",
+				"type": "address"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "tokenOut",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amountIn",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "uint256",
+				"name": "amountOut",
+				"type": "uint256"
+			}
+		],
+		"name": "Swapped",
+		"type": "event"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": false,
+				"internalType": "address",
+				"name": "account",
+				"type": "address"
+			}
+		],
+		"name": "Unpaused",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_stablecoinAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_decimals",
+				"type": "uint8"
+			}
+		],
+		"name": "addStablecoin",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_stablecoinAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_stablecoinAmountIn",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_minZeAmountOut",
+				"type": "uint256"
+			}
+		],
+		"name": "buyZe",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_stablecoinAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_stablecoinAmountIn",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_minZeAmountOut",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_deadline",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_s",
+				"type": "bytes32"
+			}
+		],
+		"name": "buyZeWithPermit",
+		"outputs": [],
+		"stateMutability": "nonpayable",
 		"type": "function"
 	},
 	{
 		"inputs": [],
-		"name": "description",
+		"name": "owner",
 		"outputs": [
 			{
-				"internalType": "string",
+				"internalType": "address",
 				"name": "",
-				"type": "string"
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
@@ -29,78 +270,213 @@
 	{
 		"inputs": [
 			{
-				"internalType": "uint80",
-				"name": "_roundId",
-				"type": "uint80"
+				"internalType": "address",
+				"name": "_tokenAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_amount",
+				"type": "uint256"
 			}
 		],
-		"name": "getRoundData",
+		"name": "ownerWithdraw",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "pause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "paused",
 		"outputs": [
 			{
-				"internalType": "uint80",
-				"name": "roundId",
-				"type": "uint80"
-			},
-			{
-				"internalType": "int256",
-				"name": "answer",
-				"type": "int256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "startedAt",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "updatedAt",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint80",
-				"name": "answeredInRound",
-				"type": "uint80"
+				"internalType": "bool",
+				"name": "",
+				"type": "bool"
 			}
 		],
 		"stateMutability": "view",
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_stablecoinAddress",
+				"type": "address"
+			}
+		],
+		"name": "removeStablecoin",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
-		"name": "latestRoundData",
+		"name": "renounceOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_stablecoinAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_zeAmountIn",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_minStablecoinAmountOut",
+				"type": "uint256"
+			}
+		],
+		"name": "sellZe",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "_stablecoinAddress",
+				"type": "address"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_zeAmountIn",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_minStablecoinAmountOut",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint256",
+				"name": "_deadline",
+				"type": "uint256"
+			},
+			{
+				"internalType": "uint8",
+				"name": "_v",
+				"type": "uint8"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_r",
+				"type": "bytes32"
+			},
+			{
+				"internalType": "bytes32",
+				"name": "_s",
+				"type": "bytes32"
+			}
+		],
+		"name": "sellZeWithPermit",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "shutdownContract",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "stablecoinList",
 		"outputs": [
 			{
-				"internalType": "uint80",
-				"name": "roundId",
-				"type": "uint80"
-			},
-			{
-				"internalType": "int256",
-				"name": "answer",
-				"type": "int256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "startedAt",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint256",
-				"name": "updatedAt",
-				"type": "uint256"
-			},
-			{
-				"internalType": "uint80",
-				"name": "answeredInRound",
-				"type": "uint80"
+				"internalType": "address",
+				"name": "",
+				"type": "address"
 			}
 		],
 		"stateMutability": "view",
 		"type": "function"
 	},
 	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"name": "supportedStablecoins",
+		"outputs": [
+			{
+				"internalType": "bool",
+				"name": "isSupported",
+				"type": "bool"
+			},
+			{
+				"internalType": "uint8",
+				"name": "decimals",
+				"type": "uint8"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "address",
+				"name": "newOwner",
+				"type": "address"
+			}
+		],
+		"name": "transferOwnership",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
 		"inputs": [],
-		"name": "version",
+		"name": "unpause",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "_newPriceInUsd",
+				"type": "uint256"
+			}
+		],
+		"name": "updateZePrice",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "zePriceInUsd",
 		"outputs": [
 			{
 				"internalType": "uint256",
@@ -110,6 +486,23 @@
 		],
 		"stateMutability": "view",
 		"type": "function"
+	},
+	{
+		"inputs": [],
+		"name": "zeToken",
+		"outputs": [
+			{
+				"internalType": "contract IERC20",
+				"name": "",
+				"type": "address"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"stateMutability": "payable",
+		"type": "receive"
 	}
 ]
 }
