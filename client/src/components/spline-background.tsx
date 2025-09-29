@@ -5,11 +5,22 @@ import ParticleBackground from './particle-background';
 // Lazy load Spline to improve performance
 const Spline = lazy(() => import('@splinetool/react-spline'));
 
+// Check if WebGL is available
+function isWebGLAvailable(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    return !!gl;
+  } catch (e) {
+    return false;
+  }
+}
+
 export default function SplineBackground() {
   const isMobile = useIsMobile();
 
-  // On mobile, fallback to particle background for better performance
-  if (isMobile) {
+  // On mobile or when WebGL is not available, fallback to particle background
+  if (isMobile || (typeof window !== 'undefined' && !isWebGLAvailable())) {
     return <ParticleBackground />;
   }
 
