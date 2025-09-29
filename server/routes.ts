@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserSchema, insertStakeSchema, insertTokenSwapSchema } from "@shared/schema";
+import { insertUserSchema, insertStakeSchema, insertTokenSwapSchema, insertRoadmapItemSchema, insertEcosystemLinkSchema } from "@shared/schema";
 import { z } from "zod";
 
 const REFERRAL_COMMISSION_RATES = [
@@ -370,6 +370,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error recalculating referrals:", error);
       res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Roadmap routes
+  app.get("/api/roadmap", async (req, res) => {
+    try {
+      const roadmapItems = await storage.getAllRoadmapItems();
+      res.json(roadmapItems);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  app.patch("/api/roadmap/:id", async (req, res) => {
+    try {
+      const updateSchema = z.object({
+        status: z.enum(["planned", "in_progress", "completed"]).optional(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+      });
+      
+      const updates = updateSchema.parse(req.body);
+      const updatedItem = await storage.updateRoadmapItem(req.params.id, updates);
+      
+      if (!updatedItem) {
+        return res.status(404).json({ message: "Roadmap item not found" });
+      }
+      
+      res.json(updatedItem);
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Invalid data" });
+    }
+  });
+
+  // Ecosystem routes
+  app.get("/api/ecosystem", async (req, res) => {
+    try {
+      const ecosystemLinks = await storage.getAllEcosystemLinks();
+      res.json(ecosystemLinks);
+    } catch (error) {
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // Telegram routes
+  app.post("/api/telegram/verify", async (req, res) => {
+    try {
+      const verifySchema = z.object({
+        userId: z.string(),
+        telegramId: z.string(),
+        // Additional telegram verification fields can be added here
+        hash: z.string().optional(),
+        auth_date: z.number().optional(),
+      });
+      
+      const data = verifySchema.parse(req.body);
+      
+      // TODO: Verify telegram login hash with bot token
+      // For now, just update the user's telegram ID
+      const updatedUser = await storage.updateUserTelegramId(data.userId, data.telegramId);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      res.json({ message: "Telegram account linked successfully", user: updatedUser });
+    } catch (error) {
+      res.status(400).json({ message: error instanceof Error ? error.message : "Invalid data" });
     }
   });
   

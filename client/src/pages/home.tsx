@@ -5,6 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Slider } from '@/components/ui/slider';
 import { APP_NAME, COIN_TICKER, STAKED_DERIVATIVE, BRANDING } from '@/lib/branding';
+import SplineBackground from '@/components/spline-background';
+import { FaTwitter, FaInstagram, FaLinkedin, FaWhatsapp, FaTelegram } from 'react-icons/fa';
 
 export default function Home() {
   const [stakeAmount, setStakeAmount] = useState(1);
@@ -22,19 +24,17 @@ export default function Home() {
   const apy = getApy(lockPeriod[0]);
   const annualReward = (stakeAmount * apy) / 100;
 
-  useEffect(() => {
-    // Set vibrant gradient background to match new logo
-    document.body.style.background = 'linear-gradient(135deg, #000000 0%, #1a0a2e 20%, #16213e 40%, #0f3460 60%, #0e4b99 80%, #2e86c1 100%)';
-    return () => {
-      document.body.style.background = '';
-    };
-  }, []);
 
   return (
     <div className="min-h-screen text-white">
       {/* Hero Section with Staking Calculator */}
       <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20 px-6">
-        <div className="container mx-auto max-w-7xl">
+        {/* 3D Spline Background */}
+        <div className="absolute inset-0 z-0">
+          <SplineBackground />
+        </div>
+        
+        <div className="container mx-auto max-w-7xl relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             
             {/* Left Side - Hero Text */}
@@ -258,39 +258,38 @@ export default function Home() {
               </CardContent>
             </Card>
 
-            {/* Liquid Solo Staking */}
+            {/* Comprehensive Ecosystem */}
             <Card 
-              className={`relative overflow-hidden bg-gray-900/50 backdrop-blur-md border-gray-700/50 rounded-3xl transition-all duration-500 hover:scale-105 cursor-pointer ${
-                hoveredFeature === 2 ? 'bg-gray-800/60 border-gray-600/60' : ''
+              className={`relative overflow-hidden bg-gradient-to-br from-purple-600/20 to-pink-600/20 backdrop-blur-md border-purple-500/30 rounded-3xl transition-all duration-500 hover:scale-105 cursor-pointer ${
+                hoveredFeature === 2 ? 'from-purple-600/30 to-pink-600/30 border-purple-500/50' : ''
               }`}
               onMouseEnter={() => setHoveredFeature(2)}
               onMouseLeave={() => setHoveredFeature(null)}
             >
               <CardContent className="p-8 text-center relative z-10">
-                <div className="w-20 h-20 mx-auto mb-6 bg-white/10 backdrop-blur-md rounded-2xl flex items-center justify-center">
-                  <div className="text-4xl">🔬</div>
+                <div className="w-20 h-20 mx-auto mb-6 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
+                  <div className="text-4xl">🌐</div>
                 </div>
-                <h3 className="text-2xl font-bold mb-2 text-white">Liquid staking</h3>
-                <h4 className="text-xl font-bold mb-6 text-white">for your solo validators.</h4>
+                <h3 className="text-2xl font-bold mb-2 text-white">Complete</h3>
+                <h4 className="text-xl font-bold mb-6 text-white">DeFi Ecosystem.</h4>
                 
-                <div className="space-y-4 text-gray-300 text-left">
+                <div className="space-y-4 text-gray-100 text-left">
                   <p className="text-sm leading-relaxed">
-                    <span className="text-white font-semibold">Liquid solo staking</span> for anyone 
-                    who can run a node.
+                    <span className="text-white font-semibold">Education Platform</span>, Real Estate Investment, 
+                    Shopping Marketplace, and AI-powered services.
                   </p>
                   <p className="text-sm leading-relaxed">
-                    Open your own Vault and <span className="text-white font-semibold">accept 
-                    delegations</span> from others. <span className="text-white font-semibold">No 
-                    collateral needed.</span>
+                    <span className="text-white font-semibold">AI Astrology, Trading Advisor</span>, and 
+                    Multiple Gaming platforms all in one ecosystem.
                   </p>
                 </div>
 
                 <div className="mt-6">
                   <Button 
                     variant="outline" 
-                    className="bg-white/10 border-white/30 text-white hover:bg-white/20 rounded-full px-6 py-2"
+                    className="bg-white/20 border-white/40 text-white hover:bg-white/30 rounded-full px-6 py-2"
                   >
-                    Become an Operator
+                    Explore Ecosystem
                   </Button>
                 </div>
               </CardContent>
@@ -429,19 +428,113 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Simple Footer */}
-      <footer className="py-16 relative">
+      {/* Enhanced Footer with Social Media and Telegram Bot */}
+      <footer className="py-16 relative bg-gradient-to-t from-black/50 to-transparent">
         <div className="container mx-auto px-6">
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-6">
-              <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl"></div>
-              <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
-{COIN_TICKER}
-              </span>
+          {/* Telegram Bot Section */}
+          <div className="text-center mb-12">
+            <Card className="glass-card max-w-2xl mx-auto">
+              <CardContent className="p-8">
+                <div className="flex items-center justify-center mb-4">
+                  <FaTelegram className="text-4xl text-blue-400 mr-3" />
+                  <h3 className="text-2xl font-bold text-white">Join Our Telegram Bot</h3>
+                </div>
+                <p className="text-gray-300 mb-6">
+                  Get instant updates, exclusive insights, and connect with our community through our Telegram bot. 
+                  Stay ahead with real-time notifications and exclusive opportunities.
+                </p>
+                <Button 
+                  className="neon-button px-8 py-3 rounded-full text-white font-semibold"
+                  onClick={() => {
+                    // Placeholder for future telegram bot link
+                    console.log('Telegram bot link will be added here');
+                  }}
+                >
+                  Join Telegram Bot
+                </Button>
+                <p className="text-xs text-gray-400 mt-3">
+                  Link will be available soon - stay tuned!
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Footer Content */}
+          <div className="grid md:grid-cols-3 gap-8 mb-8">
+            {/* Brand Section */}
+            <div className="text-center md:text-left">
+              <div className="flex items-center justify-center md:justify-start space-x-2 mb-4">
+                <div className="w-10 h-10 bg-gradient-to-r from-pink-500 to-purple-600 rounded-xl"></div>
+                <span className="text-2xl font-bold bg-gradient-to-r from-pink-500 to-purple-600 bg-clip-text text-transparent">
+                  {COIN_TICKER}
+                </span>
+              </div>
+              <p className="text-gray-400 text-sm max-w-sm">
+                The future of decentralized staking with innovative rewards and community-driven growth across multiple ecosystems.
+              </p>
             </div>
-            <p className="text-gray-400 mb-6 max-w-lg mx-auto">
-              The future of decentralized staking with innovative rewards and community-driven growth.
-            </p>
+
+            {/* Ecosystem Links */}
+            <div className="text-center">
+              <h4 className="text-white font-semibold mb-4">Our Ecosystem</h4>
+              <div className="space-y-2 text-sm text-gray-400">
+                <div>Education Platform</div>
+                <div>Real Estate Investment</div>
+                <div>Shopping Marketplace</div>
+                <div>AI Astrology</div>
+                <div>AI Trading Advisor</div>
+                <div>Gaming Platform</div>
+              </div>
+            </div>
+
+            {/* Social Media Links */}
+            <div className="text-center md:text-right">
+              <h4 className="text-white font-semibold mb-4">Connect With Us</h4>
+              <div className="flex justify-center md:justify-end space-x-4 mb-4">
+                <a 
+                  href="#" 
+                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                  aria-label="Follow us on Twitter"
+                >
+                  <FaTwitter className="text-white text-lg" />
+                </a>
+                <a 
+                  href="#" 
+                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                  aria-label="Follow us on Instagram"
+                >
+                  <FaInstagram className="text-white text-lg" />
+                </a>
+                <a 
+                  href="#" 
+                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                  aria-label="Connect on LinkedIn"
+                >
+                  <FaLinkedin className="text-white text-lg" />
+                </a>
+                <a 
+                  href="#" 
+                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                  aria-label="Chat on WhatsApp"
+                >
+                  <FaWhatsapp className="text-white text-lg" />
+                </a>
+                <a 
+                  href="#" 
+                  className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors"
+                  aria-label="Join our Telegram"
+                >
+                  <FaTelegram className="text-white text-lg" />
+                </a>
+              </div>
+              <p className="text-xs text-gray-400">
+                Stay connected across all platforms
+              </p>
+            </div>
+          </div>
+
+          {/* Copyright */}
+          <div className="border-t border-gray-700/50 pt-8 text-center">
             <div className="text-sm text-gray-500">
               © 2024 {APP_NAME} Protocol. All rights reserved.
             </div>

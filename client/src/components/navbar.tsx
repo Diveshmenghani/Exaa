@@ -33,6 +33,9 @@ export default function Navbar() {
             <Link href="/swap" data-testid="link-nav-swap">
               <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Swap</span>
             </Link>
+            <Link href="/roadmap" data-testid="link-nav-roadmap">
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">RoadMap</span>
+            </Link>
             <Link href="/profile" data-testid="link-nav-profile">
               <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Profile</span>
             </Link>

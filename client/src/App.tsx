@@ -11,6 +11,7 @@ import Swap from "@/pages/swap";
 import Stake from "@/pages/stake";
 import Unstake from "@/pages/unstake";
 import Profile from "@/pages/profile";
+import RoadMap from "@/pages/roadmap";
 import Navbar from "@/components/navbar";
 import ParticleBackground from "@/components/particle-background";
 import ScrollIndicator from "@/components/scroll-indicator";
@@ -25,6 +26,7 @@ function Router() {
         <Route path="/stake" component={Stake} />
         <Route path="/unstake" component={Unstake} />
         <Route path="/profile" component={Profile} />
+        <Route path="/roadmap" component={RoadMap} />
         <Route component={NotFound} />
       </Switch>
     </>

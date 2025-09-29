@@ -1,7 +1,10 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+export const roadmapLevelEnum = pgEnum("roadmap_level", ["L1", "L2", "L3", "L4", "L5", "L6"]);
+export const roadmapStatusEnum = pgEnum("roadmap_status", ["planned", "in_progress", "completed"]);
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -13,6 +16,7 @@ export const users = pgTable("users", {
   referralEarnings: decimal("referral_earnings", { precision: 18, scale: 8 }).default("0"),
   totalReferrals: integer("total_referrals").default(0),
   isRegistered: boolean("is_registered").default(false),
+  telegramId: text("telegram_id"),
   createdAt: timestamp("created_at").defaultNow(),
 });
 
@@ -56,6 +60,29 @@ export const contractSettings = pgTable("contract_settings", {
   lastUpdated: timestamp("last_updated").defaultNow(),
 });
 
+export const roadmapItems = pgTable("roadmap_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  level: roadmapLevelEnum("level").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  status: roadmapStatusEnum("status").default("planned"),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const ecosystemLinks = pgTable("ecosystem_links", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  description: text("description"),
+  url: text("url"),
+  iconKey: text("icon_key"),
+  category: text("category").notNull(),
+  isActive: boolean("is_active").default(true),
+  sortOrder: integer("sort_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
 export const insertUserSchema = createInsertSchema(users).omit({
   id: true,
   createdAt: true,
@@ -81,6 +108,17 @@ export const insertTokenSwapSchema = createInsertSchema(tokenSwaps).omit({
   createdAt: true,
 });
 
+export const insertRoadmapItemSchema = createInsertSchema(roadmapItems).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertEcosystemLinkSchema = createInsertSchema(ecosystemLinks).omit({
+  id: true,
+  createdAt: true,
+});
+
 export const User = z.object({
   id: z.string(),
   walletAddress: z.string(),
@@ -90,6 +128,7 @@ export const User = z.object({
   totalEarned: z.string(),
   referralEarnings: z.string(),
   totalReferrals: z.number(),
+  telegramId: z.string().optional(),
   tokenBalance: z.string().optional(),
 });
 
@@ -115,3 +154,7 @@ export type InsertReferral = z.infer<typeof insertReferralSchema>;
 export type TokenSwap = typeof tokenSwaps.$inferSelect;
 export type InsertTokenSwap = z.infer<typeof insertTokenSwapSchema>;
 export type ContractSettings = typeof contractSettings.$inferSelect;
+export type RoadmapItem = typeof roadmapItems.$inferSelect;
+export type InsertRoadmapItem = z.infer<typeof insertRoadmapItemSchema>;
+export type EcosystemLink = typeof ecosystemLinks.$inferSelect;
+export type InsertEcosystemLink = z.infer<typeof insertEcosystemLinkSchema>;
