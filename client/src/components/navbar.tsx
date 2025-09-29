@@ -1,69 +1,231 @@
 import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useWallet } from '@/hooks/use-wallet';
 import { APP_NAME, LOGO_PATH } from '@/lib/branding';
+import { useState } from 'react';
+import { Menu, X, ChevronDown } from 'lucide-react';
 
 export default function Navbar() {
   const { isConnected, walletAddress, connect, disconnect } = useWallet();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [selectedNetwork, setSelectedNetwork] = useState(() => {
+    // Persist network selection in localStorage
+    return localStorage.getItem('selectedNetwork') || 'testnet';
+  });
+
+  const handleNetworkChange = (network: string) => {
+    setSelectedNetwork(network);
+    localStorage.setItem('selectedNetwork', network);
+    // In a real app, this would trigger wallet network switching
+    console.log('Network changed to:', network);
+  };
+
+  const networks = {
+    testnet: { name: 'Holosky Testnet', color: 'text-orange-400' },
+    mainnet: { name: 'BSC Mainnet', color: 'text-green-400' }
+  };
 
   return (
     <nav className="fixed top-0 w-full z-50 glass-card">
-      <div className="container mx-auto px-6 py-4">
+      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between">
+          {/* Logo */}
           <Link href="/" data-testid="link-home">
-            <div className="flex items-center space-x-3 cursor-pointer">
+            <div className="flex items-center space-x-2 sm:space-x-3 cursor-pointer">
               <img 
                 src={LOGO_PATH} 
                 alt="Zeritheum Logo" 
-                className="w-10 h-10 object-contain rounded-lg"
+                className="w-8 h-8 sm:w-10 sm:h-10 object-contain rounded-lg"
               />
-              <span className="text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent">
+              <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent">
                 {APP_NAME}
               </span>
             </div>
           </Link>
-          
-          <div className="hidden md:flex items-center space-x-8">
+
+          {/* Desktop Navigation */}
+          <div className="hidden lg:flex items-center space-x-6">
             <Link href="/" data-testid="link-nav-home">
-              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Home</span>
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer text-sm font-medium">Home</span>
             </Link>
             <Link href="/stake" data-testid="link-nav-stake">
-              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Stake</span>
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer text-sm font-medium">Stake</span>
             </Link>
             <Link href="/swap" data-testid="link-nav-swap">
-              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Swap</span>
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer text-sm font-medium">Swap</span>
             </Link>
             <Link href="/roadmap" data-testid="link-nav-roadmap">
-              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">RoadMap</span>
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer text-sm font-medium">RoadMap</span>
             </Link>
             <Link href="/profile" data-testid="link-nav-profile">
-              <span className="text-foreground hover:text-primary transition-colors cursor-pointer">Profile</span>
+              <span className="text-foreground hover:text-primary transition-colors cursor-pointer text-sm font-medium">Profile</span>
             </Link>
+            
+            {/* Network Selector */}
+            <Select value={selectedNetwork} onValueChange={handleNetworkChange}>
+              <SelectTrigger className="w-[140px] bg-gray-800/50 border-gray-700">
+                <SelectValue>
+                  <div className="flex items-center space-x-2">
+                    <div className={`w-2 h-2 rounded-full ${selectedNetwork === 'testnet' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
+                    <span className="text-xs">{networks[selectedNetwork as keyof typeof networks].name}</span>
+                  </div>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectItem value="testnet">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 rounded-full bg-orange-400"></div>
+                    <span>Holosky Testnet</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="mainnet">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                    <span>BSC Mainnet</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          
-          {isConnected ? (
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-muted-foreground" data-testid="text-wallet-address">
-                {walletAddress?.substring(0, 6)}...{walletAddress?.substring(walletAddress.length - 4)}
-              </span>
+
+          {/* Desktop Wallet Section */}
+          <div className="hidden lg:flex items-center space-x-4">
+            {isConnected ? (
+              <div className="flex items-center space-x-3">
+                <span className="text-xs sm:text-sm text-muted-foreground" data-testid="text-wallet-address">
+                  {walletAddress?.substring(0, 6)}...{walletAddress?.substring(walletAddress.length - 4)}
+                </span>
+                <Button 
+                  onClick={disconnect}
+                  variant="outline"
+                  size="sm"
+                  data-testid="button-disconnect-wallet"
+                >
+                  Disconnect
+                </Button>
+              </div>
+            ) : (
               <Button 
-                onClick={disconnect}
-                variant="outline"
-                data-testid="button-disconnect-wallet"
+                onClick={connect}
+                className="neon-button px-4 sm:px-6 py-2 rounded-lg text-white font-semibold text-sm"
+                data-testid="button-connect-wallet"
               >
-                Disconnect
+                Connect Wallet
               </Button>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <div className="lg:hidden flex items-center space-x-2">
+            {/* Mobile Network Indicator */}
+            <div className="flex items-center space-x-1 mr-2">
+              <div className={`w-2 h-2 rounded-full ${selectedNetwork === 'testnet' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
+              <span className="text-xs text-muted-foreground">
+                {selectedNetwork === 'testnet' ? 'Test' : 'BSC'}
+              </span>
             </div>
-          ) : (
-            <Button 
-              onClick={connect}
-              className="neon-button px-6 py-2 rounded-lg text-white font-semibold"
-              data-testid="button-connect-wallet"
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-foreground"
             >
-              Connect Wallet
+              {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
-          )}
+          </div>
         </div>
+
+        {/* Mobile Menu */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden mt-4 pb-4 border-t border-gray-800">
+            <div className="flex flex-col space-y-4 pt-4">
+              {/* Mobile Navigation Links */}
+              <Link href="/" data-testid="link-nav-home-mobile">
+                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}>Home</span>
+              </Link>
+              <Link href="/stake" data-testid="link-nav-stake-mobile">
+                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}>Stake</span>
+              </Link>
+              <Link href="/swap" data-testid="link-nav-swap-mobile">
+                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}>Swap</span>
+              </Link>
+              <Link href="/roadmap" data-testid="link-nav-roadmap-mobile">
+                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}>RoadMap</span>
+              </Link>
+              <Link href="/profile" data-testid="link-nav-profile-mobile">
+                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
+                      onClick={() => setIsMobileMenuOpen(false)}>Profile</span>
+              </Link>
+              
+              {/* Mobile Network Selector */}
+              <div className="py-2">
+                <span className="text-sm font-medium text-muted-foreground mb-2 block">Network</span>
+                <Select value={selectedNetwork} onValueChange={handleNetworkChange}>
+                  <SelectTrigger className="w-full bg-gray-800/50 border-gray-700">
+                    <SelectValue>
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-2 h-2 rounded-full ${selectedNetwork === 'testnet' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
+                        <span>{networks[selectedNetwork as keyof typeof networks].name}</span>
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    <SelectItem value="testnet">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-orange-400"></div>
+                        <span>Holosky Testnet</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="mainnet">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                        <span>BSC Mainnet</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Mobile Wallet Section */}
+              <div className="pt-4 border-t border-gray-800">
+                {isConnected ? (
+                  <div className="space-y-3">
+                    <div className="text-sm text-muted-foreground" data-testid="text-wallet-address-mobile">
+                      {walletAddress?.substring(0, 10)}...{walletAddress?.substring(walletAddress.length - 8)}
+                    </div>
+                    <Button 
+                      onClick={() => {
+                        disconnect();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      variant="outline"
+                      className="w-full"
+                      data-testid="button-disconnect-wallet-mobile"
+                    >
+                      Disconnect Wallet
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    onClick={() => {
+                      connect();
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className="neon-button w-full py-3 rounded-lg text-white font-semibold"
+                    data-testid="button-connect-wallet-mobile"
+                  >
+                    Connect Wallet
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </nav>
   );

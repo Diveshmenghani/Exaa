@@ -40,7 +40,7 @@ export default function Home() {
             {/* Left Side - Hero Text */}
             <div className="space-y-8">
               <div>
-                <h1 className="text-6xl md:text-7xl font-black leading-tight">
+                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
                   <span className="bg-gradient-to-r from-cyan-400 via-purple-600 to-pink-500 bg-clip-text text-transparent">
                     Stake {COIN_TICKER}
                   </span>
@@ -53,22 +53,22 @@ export default function Home() {
                 </h1>
               </div>
               
-              <div className="space-y-4 text-gray-300 text-lg max-w-lg">
+              <div className="space-y-4 text-gray-300 text-base sm:text-lg max-w-lg">
                 <p>Go Solo or Pool with others.</p>
                 <p>Stake or unstake in seconds.</p>
                 <p>Use your stake in DeFi.</p>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-3 gap-8 pt-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-8">
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-2">
                     <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center mr-2">
                       <span className="text-xs">👥</span>
                     </div>
                   </div>
-                  <div className="text-3xl font-bold text-white" data-testid="text-total-stakers">86k+</div>
-                  <div className="text-sm text-gray-300">Total stakers</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-white" data-testid="text-total-stakers">86k+</div>
+                  <div className="text-xs sm:text-sm text-gray-300">Total stakers</div>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-2">
@@ -76,8 +76,8 @@ export default function Home() {
                       <span className="text-xs">💎</span>
                     </div>
                   </div>
-                  <div className="text-3xl font-bold text-white" data-testid="text-total-staked">{COIN_TICKER} 317.63k</div>
-                  <div className="text-sm text-gray-300">Total staked</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-white" data-testid="text-total-staked">{COIN_TICKER} 317.63k</div>
+                  <div className="text-xs sm:text-sm text-gray-300">Total staked</div>
                 </div>
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-2">
@@ -85,8 +85,8 @@ export default function Home() {
                       <span className="text-xs">🏆</span>
                     </div>
                   </div>
-                  <div className="text-3xl font-bold text-white" data-testid="text-rewards-paid">{COIN_TICKER} 26.14k</div>
-                  <div className="text-sm text-gray-300">Rewards paid</div>
+                  <div className="text-2xl sm:text-3xl font-bold text-white" data-testid="text-rewards-paid">{COIN_TICKER} 26.14k</div>
+                  <div className="text-xs sm:text-sm text-gray-300">Rewards paid</div>
                 </div>
               </div>
             </div>

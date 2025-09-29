@@ -260,8 +260,8 @@ export default function Stake() {
   // handleUnstake function removed - now handled per-item in unstake tab
 
   return (
-    <div className="min-h-screen pt-24 pb-20">
-      <div className="container mx-auto px-6 max-w-4xl">
+    <div className="min-h-screen pt-24 pb-20 bg-black">
+      <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
         {/* Main Staking Interface */}
         <Card className="glass-card mb-8">
           <CardContent className="p-8">

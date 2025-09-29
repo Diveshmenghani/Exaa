@@ -228,7 +228,7 @@ export default function Profile() {
   // Not connected state
   if (!isConnected) {
     return (
-      <div className="min-h-screen pt-24 pb-20 flex items-center justify-center">
+      <div className="min-h-screen pt-24 pb-20 bg-black flex items-center justify-center">
         <Card className="glass-card p-8 text-center max-w-md">
           <CardContent>
             <i className="fas fa-wallet text-6xl text-muted-foreground mb-4"></i>
@@ -308,7 +308,7 @@ export default function Profile() {
   // Loading state
   if (userLoading) {
     return (
-      <div className="min-h-screen pt-24 pb-20 flex items-center justify-center">
+      <div className="min-h-screen pt-24 pb-20 bg-black flex items-center justify-center">
         <Card className="glass-card p-8 text-center">
           <CardContent>
             <div className="animate-spin w-12 h-12 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
@@ -321,8 +321,8 @@ export default function Profile() {
 
   // Main profile view
   return (
-    <div className="min-h-screen pt-24 pb-20">
-      <div className="container mx-auto px-6">
+    <div className="min-h-screen pt-24 pb-20 bg-black">
+      <div className="container mx-auto px-4 sm:px-6">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-4">
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
