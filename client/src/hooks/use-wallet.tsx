@@ -6,25 +6,14 @@ interface WalletContextType {
   walletAddress: string | null;
   connect: () => Promise<void>;
   disconnect: () => void;
-  switchToHoleskyNetwork: () => Promise<boolean>;
+  switchToNetwork: (chainId: number) => Promise<boolean>;
   provider: ethers.providers.Web3Provider | null;
   signer: ethers.Signer | null;
   chainId: number | null;
-  isHoleskyNetwork: boolean;
+  isCorrectNetwork: (expectedChainId: number) => boolean;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
-
-// Holesky testnet chain ID and RPC
-const HOLESKY_CHAIN_ID = '0x4268'; // Chain ID for Holesky testnet (decimal: 17000)
-const HOLESKY_RPC_URL = 'https://ethereum-holesky-rpc.publicnode.com';
-
-// Fallback RPC URLs for better reliability
-const HOLESKY_RPC_FALLBACKS = [
-  'https://ethereum-holesky-rpc.publicnode.com',
-  'https://holesky.drpc.org',
-  'https://rpc.holesky.ethpandaops.io'
-];
 
 export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [isConnected, setIsConnected] = useState(false);
@@ -32,7 +21,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
   const [provider, setProvider] = useState<ethers.providers.Web3Provider | null>(null);
   const [signer, setSigner] = useState<ethers.Signer | null>(null);
   const [chainId, setChainId] = useState<number | null>(null);
-  const [isHoleskyNetwork, setIsHoleskyNetwork] = useState(false);
 
   // Check if wallet was previously connected
   const checkConnection = async () => {
@@ -50,7 +38,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           setWalletAddress(address);
           setChainId(network.chainId);
           setIsConnected(true);
-          setIsHoleskyNetwork(network.chainId === parseInt(HOLESKY_CHAIN_ID, 16));
         } else {
           // No accounts connected, reset state
           setWalletAddress(null);
@@ -58,7 +45,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
           setProvider(null);
           setSigner(null);
           setChainId(null);
-          setIsHoleskyNetwork(false);
         }
       } catch (error) {
         console.error('Error checking wallet connection:', error);
@@ -66,58 +52,35 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Function to switch to Holesky testnet
-  const switchToHoleskyNetwork = async (): Promise<boolean> => {
+  // Function to switch to any network
+  const switchToNetwork = async (targetChainId: number): Promise<boolean> => {
     if (!window.ethereum) {
       alert('Please install MetaMask or another Ethereum wallet extension!');
       return false;
     }
 
     try {
-      // Try to switch to Holesky network
+      // Try to switch to the target network
       await window.ethereum.request({
         method: 'wallet_switchEthereumChain',
-        params: [{ chainId: HOLESKY_CHAIN_ID }],
+        params: [{ chainId: `0x${targetChainId.toString(16)}` }],
       });
       
       // Update network status
       const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
       const network = await web3Provider.getNetwork();
       setChainId(network.chainId);
-      setIsHoleskyNetwork(network.chainId === parseInt(HOLESKY_CHAIN_ID, 16));
       
       return true;
     } catch (error: any) {
-      // If the error code is 4902, the chain hasn't been added to MetaMask
-      if (error.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [
-              {
-                chainId: HOLESKY_CHAIN_ID,
-                chainName: 'Holesky Testnet',
-                nativeCurrency: {
-                  name: 'Holesky ETH',
-                  symbol: 'ETH',
-                  decimals: 18,
-                },
-                rpcUrls: HOLESKY_RPC_FALLBACKS,
-                blockExplorerUrls: ['https://holesky.etherscan.io/'],
-              },
-            ],
-          });
-          
-          // Try switching again after adding
-          return switchToHoleskyNetwork();
-        } catch (addError) {
-          console.error('Error adding Holesky network:', addError);
-          return false;
-        }
-      }
-      console.error('Error switching to Holesky network:', error);
+      console.error('Error switching network:', error);
       return false;
     }
+  };
+
+  // Helper function to check if wallet is on the correct network
+  const isCorrectNetwork = (expectedChainId: number): boolean => {
+    return chainId === expectedChainId;
   };
 
   useEffect(() => {
@@ -175,12 +138,6 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       setWalletAddress(address);
       setChainId(network.chainId);
       setIsConnected(true);
-      setIsHoleskyNetwork(network.chainId === parseInt(HOLESKY_CHAIN_ID, 16));
-      
-      // Automatically try to switch to Holesky network if not already on it
-      if (network.chainId !== parseInt(HOLESKY_CHAIN_ID, 16)) {
-        await switchToHoleskyNetwork();
-      }
     } catch (error) {
       console.error('Failed to connect wallet:', error);
       alert('Failed to connect wallet. Please try again.');
@@ -201,11 +158,11 @@ export function WalletProvider({ children }: { children: React.ReactNode }) {
       walletAddress, 
       connect, 
       disconnect, 
-      switchToHoleskyNetwork,
+      switchToNetwork,
       provider, 
       signer,
       chainId,
-      isHoleskyNetwork
+      isCorrectNetwork
     }}>
       {children}
     </WalletContext.Provider>

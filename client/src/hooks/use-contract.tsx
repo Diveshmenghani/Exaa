@@ -2,22 +2,12 @@ import { useState, useEffect, createContext, useContext } from 'react';
 import { ethers } from 'ethers';
 import Web3Modal from 'web3modal';
 import { useWallet } from './use-wallet';
+import { useNetwork } from './use-network';
 import ExaaStakingABI from '../lib/contracts/ExaaStaking.json';
 import ExaaSwapABI from '../lib/contracts/ExaaSwap.json';
 import CoinABI from '../lib/contracts/coin.json';
-import ERC20PermitABI from '../lib/contracts/ERC20Permit.json';
 
-// Contract addresses for Holesky testnet
-const EXAA_STAKING_ADDRESS = '0x6e24A5Ec49aE76Cd720FB6550aA0a1D57C823e0F'; // Holesky testnet staking contract
-const EXAA_TOKEN_ADDRESS = '0x00140Dc2155aA4197B88464aC8fee02D161f76fa'; // Holesky testnet token address (ZE token)
-const EXAA_SWAP_ADDRESS = '0x2Ca330C1F35579AA9f7e5d34D6E173d3a87Ab24B'; // New ExaaSwap contract for stablecoin swaps
-// Stablecoin addresses (Holesky testnet)
-const USDT_TOKEN_ADDRESS = '0x87350147a24099bf1e7e677576f01c1415857c75'; // Tether USD (USDT) on Holesky
-const BUSD_TOKEN_ADDRESS = '0x88a61a16025f4762fe6379b61ea9f6c2d1c17044'; // BUSD not available on Holesky
-const USDC_TOKEN_ADDRESS = '0xd718826bbc28e61dc93aacae04711c8e755b4915'; // USD Coin (USDC) on Holesky - most active
-const FUSD_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'; // FUSD not available on Holesky
-// Legacy addresses (for backward compatibility)
-const ETH_TOKEN_ADDRESS = '0x9E12AD42c4E4d2acFBADE01a96446e48e6764B98'; // ETH on Holesky
+// Contract addresses will be retrieved from network configuration
 
 // Helper function to handle RPC errors gracefully
 const handleRpcError = (error: any, context: string): string => {
@@ -144,7 +134,8 @@ const ERC20_ABI = [
 ];
 
 export function ContractProvider({ children }: { children: React.ReactNode }) {
-  const { signer, isConnected, isHoleskyNetwork, switchToHoleskyNetwork } = useWallet();
+  const { signer, isConnected, isCorrectNetwork, switchToNetwork } = useWallet();
+  const { currentNetwork, getNetworkConfig } = useNetwork();
   const [stakingContract, setStakingContract] = useState<ethers.Contract | null>(null);
   const [tokenContract, setTokenContract] = useState<ethers.Contract | null>(null);
   const [swapContract, setSwapContract] = useState<ethers.Contract | null>(null);
@@ -159,56 +150,46 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initializeContracts = async () => {
       if (signer && isConnected) {
-        // Check if we're on Holesky network, if not, prompt to switch
-        if (!isHoleskyNetwork) {
-          try {
-            const switched = await switchToHoleskyNetwork();
-            if (!switched) {
-              setError('Please switch to Holesky testnet to use this application');
-              return;
-            }
-          } catch (err: any) {
-            console.error('Error switching to Holesky:', err);
-            setError('Failed to switch to Holesky testnet');
-            return;
-          }
-        }
+        // Network switching will be handled by the network context
+        // when user selects a different network
         
         try {
+          // Get network-specific contract addresses
+          const networkConfig = getNetworkConfig(currentNetwork.id);
+          const contracts = networkConfig.contracts;
+          
           // Initialize contracts
           const newStakingContract = new ethers.Contract(
-            EXAA_STAKING_ADDRESS,
+            contracts.EXAA_STAKING_ADDRESS,
             ExaaStakingABI.abi,
             signer
           );
           
           const newTokenContract = new ethers.Contract(
-            EXAA_TOKEN_ADDRESS,
+            contracts.ZE_TOKEN_ADDRESS,
             CoinABI.abi,
             signer
           );
           
           const newSwapContract = new ethers.Contract(
-            EXAA_SWAP_ADDRESS,
+            contracts.EXAA_SWAP_ADDRESS,
             ExaaSwapABI.abi,
             signer
           );
           
           // Initialize stablecoin contracts (only if addresses are not zero)
-          const newUsdtContract = USDT_TOKEN_ADDRESS.toLowerCase() !== '0x0000000000000000000000000000000000000000'
-            ? new ethers.Contract(USDT_TOKEN_ADDRESS, ERC20_ABI, signer) : null;
-          const newBusdContract = BUSD_TOKEN_ADDRESS.toLowerCase() !== '0x0000000000000000000000000000000000000000'
-            ? new ethers.Contract(BUSD_TOKEN_ADDRESS, ERC20_ABI, signer) : null;
-          const newUsdcContract = USDC_TOKEN_ADDRESS.toLowerCase() !== '0x0000000000000000000000000000000000000000'
-            ? new ethers.Contract(USDC_TOKEN_ADDRESS, ERC20_ABI, signer) : null;
-          const newFusdContract = FUSD_TOKEN_ADDRESS !== '0x0000000000000000000000000000000000000000' 
-            ? new ethers.Contract(FUSD_TOKEN_ADDRESS, ERC20_ABI, signer) : null;
+          const newUsdtContract = contracts.USDT_TOKEN_ADDRESS.toLowerCase() !== '0x0000000000000000000000000000000000000000'
+            ? new ethers.Contract(contracts.USDT_TOKEN_ADDRESS, ERC20_ABI, signer) : null;
+          const newBusdContract = contracts.BUSD_TOKEN_ADDRESS.toLowerCase() !== '0x0000000000000000000000000000000000000000'
+            ? new ethers.Contract(contracts.BUSD_TOKEN_ADDRESS, ERC20_ABI, signer) : null;
+          const newUsdcContract = contracts.USDC_TOKEN_ADDRESS.toLowerCase() !== '0x0000000000000000000000000000000000000000'
+            ? new ethers.Contract(contracts.USDC_TOKEN_ADDRESS, ERC20_ABI, signer) : null;
+          const newFusdContract = contracts.FUSD_TOKEN_ADDRESS !== '0x0000000000000000000000000000000000000000' 
+            ? new ethers.Contract(contracts.FUSD_TOKEN_ADDRESS, ERC20_ABI, signer) : null;
           
-          const newEthContract = new ethers.Contract(
-            ETH_TOKEN_ADDRESS,
-            ERC20_ABI,
-            signer
-          );
+          // For ETH token, we'll use a placeholder since it's not defined in the network config
+          const newEthContract = contracts.USDT_TOKEN_ADDRESS !== '0x0000000000000000000000000000000000000000'
+            ? new ethers.Contract(contracts.USDT_TOKEN_ADDRESS, ERC20_ABI, signer) : null;
           
           setStakingContract(newStakingContract);
           setTokenContract(newTokenContract);
@@ -238,32 +219,37 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     };
     
     initializeContracts();
-  }, [signer, isConnected, isHoleskyNetwork, switchToHoleskyNetwork]);
+  }, [signer, isConnected, currentNetwork, getNetworkConfig]);
 
+  // Helper function to ensure we're on the correct network
+  const ensureCorrectNetwork = async (): Promise<boolean> => {
+    if (!isCorrectNetwork(currentNetwork.chainId)) {
+      try {
+        const switched = await switchToNetwork(currentNetwork.chainId);
+        if (!switched) {
+          setError(`Please switch to ${currentNetwork.name} to continue`);
+          return false;
+        }
+      } catch (err: any) {
+        console.error('Error switching network:', err);
+        setError(`Failed to switch to ${currentNetwork.name}`);
+        return false;
+      }
+    }
+    return true;
+  };
 
-
-
-
-  // Stake tokens with permit on Holesky testnet
+  // Stake tokens with permit
   const stakeWithPermit = async (amount: string, lockYears: number, referrer: string, deadline: number, v: number, r: string, s: string): Promise<boolean> => {
     if (!stakingContract || !isConnected) {
       setError('Wallet not connected or contract not initialized');
       return false;
     }
 
-    // Ensure we're on Holesky network
-    if (!isHoleskyNetwork) {
-      try {
-        const switched = await switchToHoleskyNetwork();
-        if (!switched) {
-          setError('Please switch to Holesky testnet to stake tokens');
-          return false;
-        }
-      } catch (err: any) {
-        console.error('Error switching to Holesky:', err);
-        setError('Failed to switch to Holesky testnet');
-        return false;
-      }
+    // Ensure we're on the correct network
+    const networkOk = await ensureCorrectNetwork();
+    if (!networkOk) {
+      return false;
     }
 
     try {
@@ -414,14 +400,16 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
         slippagePercent
       });
       
+      // Get network-specific contract addresses
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const contracts = networkConfig.contracts;
+      
       // Approve tokens first
       let approveTx;
-      if (fromToken.toLowerCase() === USDT_TOKEN_ADDRESS.toLowerCase()) {
+      if (fromToken.toLowerCase() === contracts.USDT_TOKEN_ADDRESS.toLowerCase()) {
         approveTx = await approveUSDT(amount);
-      } else if (fromToken.toLowerCase() === ETH_TOKEN_ADDRESS.toLowerCase()) {
-        approveTx = await approveETH(amount);
-      } else if (fromToken.toLowerCase() === EXAA_TOKEN_ADDRESS.toLowerCase()) {
-        approveTx = await approveExaaForSelling(amount);
+      } else if (fromToken.toLowerCase() === contracts.ZE_TOKEN_ADDRESS.toLowerCase()) {
+        approveTx = await approveTokens(amount);
       }
       
       if (!approveTx) {
@@ -446,17 +434,18 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
   
   // Get token price from smart contract (Chainlink oracle)
   const getTokenPrice = async (tokenAddress: string): Promise<string> => {
+    // Get network-specific contract addresses
+    const networkConfig = getNetworkConfig(currentNetwork.id);
+    const contracts = networkConfig.contracts;
+    
     if (!swapContract || !isConnected) {
       console.error('Swap contract not initialized or wallet not connected');
       // Return fallback prices if contract not available
-      if (tokenAddress.toLowerCase() === EXAA_TOKEN_ADDRESS.toLowerCase()) {
+      if (tokenAddress.toLowerCase() === contracts.ZE_TOKEN_ADDRESS.toLowerCase()) {
         return '0.16';
       }
-      if (tokenAddress.toLowerCase() === USDT_TOKEN_ADDRESS.toLowerCase()) {
+      if (tokenAddress.toLowerCase() === contracts.USDT_TOKEN_ADDRESS.toLowerCase()) {
         return '1.0';
-      }
-      if (tokenAddress.toLowerCase() === ETH_TOKEN_ADDRESS.toLowerCase()) {
-        return '3000.0';
       }
       return '0';
     }
@@ -465,15 +454,12 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       let priceInWei: ethers.BigNumber;
       
       // Get price from smart contract based on token address
-      if (tokenAddress.toLowerCase() === EXAA_TOKEN_ADDRESS.toLowerCase()) {
-        // Get EXAA/ZE token price from contract
-        priceInWei = await swapContract.getExaaPrice();
-      } else if (tokenAddress.toLowerCase() === USDT_TOKEN_ADDRESS.toLowerCase()) {
+      if (tokenAddress.toLowerCase() === contracts.ZE_TOKEN_ADDRESS.toLowerCase()) {
+        // Get ZE token price from contract
+        priceInWei = await swapContract.getZePrice();
+      } else if (tokenAddress.toLowerCase() === contracts.USDT_TOKEN_ADDRESS.toLowerCase()) {
         // Get USDT price from contract
         priceInWei = await swapContract.getUsdtPrice();
-      } else if (tokenAddress.toLowerCase() === ETH_TOKEN_ADDRESS.toLowerCase()) {
-        // Get ETH price from contract
-        priceInWei = await swapContract.getEthPrice();
       } else {
         console.error('Unknown token address:', tokenAddress);
         return '0';
@@ -485,14 +471,11 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     } catch (err: any) {
       console.error('Error fetching token price from contract:', err);
       // Fallback prices if contract call fails
-      if (tokenAddress.toLowerCase() === EXAA_TOKEN_ADDRESS.toLowerCase()) {
+      if (tokenAddress.toLowerCase() === contracts.ZE_TOKEN_ADDRESS.toLowerCase()) {
         return '0.16';
       }
-      if (tokenAddress.toLowerCase() === USDT_TOKEN_ADDRESS.toLowerCase()) {
+      if (tokenAddress.toLowerCase() === contracts.USDT_TOKEN_ADDRESS.toLowerCase()) {
         return '1.0';
-      }
-      if (tokenAddress.toLowerCase() === ETH_TOKEN_ADDRESS.toLowerCase()) {
-        return '3000.0';
       }
       return '0';
     }
@@ -541,8 +524,11 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       
       const amountInWei = ethers.utils.parseEther(amount.toString().trim());
       
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const contracts = networkConfig.contracts;
+      
       // Approve ETH for swap contract
-      const tx = await ethContract.approve(EXAA_SWAP_ADDRESS, amountInWei);
+      const tx = await ethContract.approve(contracts.EXAA_SWAP_ADDRESS, amountInWei);
       await tx.wait();
       
       setIsLoading(false);
@@ -562,19 +548,10 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
 
-    // Ensure we're on Holesky network
-    if (!isHoleskyNetwork) {
-      try {
-        const switched = await switchToHoleskyNetwork();
-        if (!switched) {
-          setError('Please switch to Holesky testnet to approve tokens');
-          return false;
-        }
-      } catch (err: any) {
-        console.error('Error switching to Holesky:', err);
-        setError('Failed to switch to Holesky testnet');
-        return false;
-      }
+    // Ensure we're on the correct network
+    const networkOk = await ensureCorrectNetwork();
+    if (!networkOk) {
+      return false;
     }
 
     try {
@@ -590,13 +567,16 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       // Convert string amount to Wei
       const amountInWei = ethers.utils.parseEther(amount.toString().trim());
       
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const contracts = networkConfig.contracts;
+      
       console.log('Approving tokens:', {
         amount: amount,
         amountInWei: amountInWei.toString(),
-        spender: EXAA_STAKING_ADDRESS
+        spender: contracts.EXAA_STAKING_ADDRESS
       });
       
-      const tx = await tokenContract.approve(EXAA_STAKING_ADDRESS, amountInWei);
+      const tx = await tokenContract.approve(contracts.EXAA_STAKING_ADDRESS, amountInWei);
       await tx.wait();
       setIsLoading(false);
       return true;
@@ -634,19 +614,10 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
 
-    // Ensure we're on Holesky network
-    if (!isHoleskyNetwork) {
-      try {
-        const switched = await switchToHoleskyNetwork();
-        if (!switched) {
-          setError('Please switch to Holesky testnet to add referrer');
-          return false;
-        }
-      } catch (err: any) {
-        console.error('Error switching to Holesky:', err);
-        setError('Failed to switch to Holesky testnet');
-        return false;
-      }
+    // Ensure we're on the correct network
+    const networkOk = await ensureCorrectNetwork();
+    if (!networkOk) {
+      return false;
     }
 
     try {
@@ -670,19 +641,10 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       return false;
     }
 
-    // Ensure we're on Holesky network
-    if (!isHoleskyNetwork) {
-      try {
-        const switched = await switchToHoleskyNetwork();
-        if (!switched) {
-          setError('Please switch to Holesky testnet to unstake');
-          return false;
-        }
-      } catch (err: any) {
-        console.error('Error switching to Holesky:', err);
-        setError('Failed to switch to Holesky testnet');
-        return false;
-      }
+    // Ensure we're on the correct network
+    const networkOk = await ensureCorrectNetwork();
+    if (!networkOk) {
+      return false;
     }
 
     try {
@@ -706,19 +668,10 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       return null;
     }
 
-    // Ensure we're on Holesky network
-    if (!isHoleskyNetwork) {
-      try {
-        const switched = await switchToHoleskyNetwork();
-        if (!switched) {
-          setError('Please switch to Holesky testnet to get user info');
-          return null;
-        }
-      } catch (err: any) {
-        console.error('Error switching to Holesky:', err);
-        setError('Failed to switch to Holesky testnet');
-        return null;
-      }
+    // Ensure we're on the correct network
+    const networkOk = await ensureCorrectNetwork();
+    if (!networkOk) {
+      return null;
     }
 
     try {
@@ -747,19 +700,10 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       return '0';
     }
 
-    // Ensure we're on Holesky network
-    if (!isHoleskyNetwork) {
-      try {
-        const switched = await switchToHoleskyNetwork();
-        if (!switched) {
-          setError('Please switch to Holesky testnet to get total staked');
-          return '0';
-        }
-      } catch (err: any) {
-        console.error('Error switching to Holesky:', err);
-        setError('Failed to switch to Holesky testnet');
-        return '0';
-      }
+    // Ensure we're on the correct network
+    const networkOk = await ensureCorrectNetwork();
+    if (!networkOk) {
+      return '0';
     }
 
     try {
@@ -786,19 +730,10 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       return [];
     }
 
-    // Ensure we're on Holesky network
-    if (!isHoleskyNetwork) {
-      try {
-        const switched = await switchToHoleskyNetwork();
-        if (!switched) {
-          setError('Please switch to Holesky testnet to get stakes');
-          return [];
-        }
-      } catch (err: any) {
-        console.error('Error switching to Holesky:', err);
-        setError('Failed to switch to Holesky testnet');
-        return [];
-      }
+    // Ensure we're on the correct network
+    const networkOk = await ensureCorrectNetwork();
+    if (!networkOk) {
+      return [];
     }
 
     try {
@@ -874,7 +809,8 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(true);
       // USDT typically has 6 decimals
       const amountInWei = ethers.utils.parseUnits(amount, 6);
-      const tx = await usdtContract.approve(EXAA_SWAP_ADDRESS, amountInWei);
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const tx = await usdtContract.approve(networkConfig.contracts.EXAA_SWAP_ADDRESS, amountInWei);
       await tx.wait();
       setIsLoading(false);
       return true;
@@ -896,7 +832,9 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       const amountInWei = ethers.utils.parseEther(amount);
-      const tx = await tokenContract.approve(EXAA_SWAP_ADDRESS, amountInWei);
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const contracts = networkConfig.contracts;
+      const tx = await tokenContract.approve(contracts.EXAA_SWAP_ADDRESS, amountInWei);
       await tx.wait();
       setIsLoading(false);
       return true;
@@ -910,24 +848,26 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
 
   // Check if contracts are properly deployed
   const checkContractDeployment = async (): Promise<boolean> => {
-    if (!signer || !isHoleskyNetwork) {
+    if (!signer) {
       return false;
     }
 
     try {
       const provider = signer.provider;
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const contracts = networkConfig.contracts;
       
       // Check token contract
-      const tokenCode = await provider!.getCode(EXAA_TOKEN_ADDRESS);
+      const tokenCode = await provider!.getCode(contracts.ZE_TOKEN_ADDRESS);
       if (tokenCode === '0x') {
-        console.error('Token contract not deployed at:', EXAA_TOKEN_ADDRESS);
+        console.error('Token contract not deployed at:', contracts.ZE_TOKEN_ADDRESS);
         return false;
       }
       
       // Check staking contract
-      const stakingCode = await provider!.getCode(EXAA_STAKING_ADDRESS);
+      const stakingCode = await provider!.getCode(contracts.EXAA_STAKING_ADDRESS);
       if (stakingCode === '0x') {
-        console.error('Staking contract not deployed at:', EXAA_STAKING_ADDRESS);
+        console.error('Staking contract not deployed at:', contracts.EXAA_STAKING_ADDRESS);
         return false;
       }
       
@@ -946,18 +886,15 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      // First check if we're connected to the right network
-      if (!isHoleskyNetwork) {
-        console.warn('Not connected to Holesky network, cannot fetch balance');
-        return '0';
-      }
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const contracts = networkConfig.contracts;
 
       // Check if the contract exists by getting its code
       const provider = tokenContract.provider;
-      const code = await provider.getCode(EXAA_TOKEN_ADDRESS);
+      const code = await provider.getCode(contracts.ZE_TOKEN_ADDRESS);
       
       if (code === '0x') {
-        console.error('Token contract not deployed at address:', EXAA_TOKEN_ADDRESS);
+        console.error('Token contract not deployed at address:', contracts.ZE_TOKEN_ADDRESS);
         return '0';
       }
 
@@ -1050,13 +987,16 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const contracts = networkConfig.contracts;
+      
       // Verify contract exists at the address
       if (!signer.provider) {
         throw new Error('Provider not available');
       }
-      const code = await signer.provider.getCode(EXAA_SWAP_ADDRESS);
+      const code = await signer.provider.getCode(contracts.EXAA_SWAP_ADDRESS);
       if (code === '0x' || code === '0x0') {
-        throw new Error(`No contract found at address ${EXAA_SWAP_ADDRESS}`);
+        throw new Error(`No contract found at address ${contracts.EXAA_SWAP_ADDRESS}`);
       }
       
       // Get stablecoin decimals from contract
@@ -1069,11 +1009,11 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       
       // Check current allowance
       const userAddress = await signer.getAddress();
-      const currentAllowance = await stablecoinContract.allowance(userAddress, EXAA_SWAP_ADDRESS);
+      const currentAllowance = await stablecoinContract.allowance(userAddress, contracts.EXAA_SWAP_ADDRESS);
       
       if (currentAllowance.lt(amountInWei)) {
         console.log('Approving stablecoin transfer...');
-        const approveTx = await stablecoinContract.approve(EXAA_SWAP_ADDRESS, amountInWei);
+        const approveTx = await stablecoinContract.approve(contracts.EXAA_SWAP_ADDRESS, amountInWei);
         await approveTx.wait();
         console.log('Stablecoin approval confirmed');
       }
@@ -1121,13 +1061,16 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     try {
       setIsLoading(true);
       
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const contracts = networkConfig.contracts;
+      
       // Verify contract exists at the address
       if (!signer.provider) {
         throw new Error('Provider not available');
       }
-      const code = await signer.provider.getCode(EXAA_SWAP_ADDRESS);
+      const code = await signer.provider.getCode(contracts.EXAA_SWAP_ADDRESS);
       if (code === '0x' || code === '0x0') {
-        throw new Error(`No contract found at address ${EXAA_SWAP_ADDRESS}`);
+        throw new Error(`No contract found at address ${contracts.EXAA_SWAP_ADDRESS}`);
       }
       
       const zeAmountInWei = ethers.utils.parseEther(zeAmount);
@@ -1137,11 +1080,11 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       
       // First, approve the ZE token transfer
       const userAddress = await signer.getAddress();
-      const currentAllowance = await tokenContract.allowance(userAddress, EXAA_SWAP_ADDRESS);
+      const currentAllowance = await tokenContract.allowance(userAddress, contracts.EXAA_SWAP_ADDRESS);
       
       if (currentAllowance.lt(zeAmountInWei)) {
         console.log('Approving ZE token transfer...');
-        const approveTx = await tokenContract.approve(EXAA_SWAP_ADDRESS, zeAmountInWei);
+        const approveTx = await tokenContract.approve(contracts.EXAA_SWAP_ADDRESS, zeAmountInWei);
         await approveTx.wait();
         console.log('ZE token approval confirmed');
       }
@@ -1334,8 +1277,11 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const contracts = networkConfig.contracts;
+      
       const owner = await signer.getAddress();
-      const spender = EXAA_SWAP_ADDRESS;
+      const spender = contracts.EXAA_SWAP_ADDRESS;
       
       // Convert amounts to wei
       const stablecoinDecimals = await getStablecoinDecimals(stablecoinAddress);
@@ -1428,8 +1374,11 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     setError(null);
 
     try {
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const contracts = networkConfig.contracts;
+      
       const owner = await signer.getAddress();
-      const spender = EXAA_SWAP_ADDRESS;
+      const spender = contracts.EXAA_SWAP_ADDRESS;
       
       // Convert amounts to wei
       const zeAmountWei = ethers.utils.parseUnits(zeAmount, 18); // ZE token has 18 decimals
@@ -1512,10 +1461,13 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
 
   // Get list of supported stablecoins
   const getStablecoinList = async (): Promise<{address: string, symbol: string, decimals: number}[]> => {
+    const networkConfig = getNetworkConfig(currentNetwork.id);
+    const contracts = networkConfig.contracts;
+    
     // Fallback stablecoin list for when contract calls fail
     const fallbackStablecoins = [
-      { address: USDT_TOKEN_ADDRESS, symbol: 'USDT', decimals: 6 },
-      { address: USDC_TOKEN_ADDRESS, symbol: 'USDC', decimals: 6 }
+      { address: contracts.USDT_TOKEN_ADDRESS, symbol: 'USDT', decimals: 6 },
+      { address: contracts.USDC_TOKEN_ADDRESS, symbol: 'USDC', decimals: 6 }
     ].filter(coin => coin.address !== '0x0000000000000000000000000000000000000000');
 
     if (!swapContract) {
@@ -1526,9 +1478,9 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     try {
       // Use predefined stablecoin addresses and check if they're supported
       const predefinedStablecoins = [
-        { address: USDT_TOKEN_ADDRESS, symbol: 'USDT', decimals: 6 },
-        { address: USDC_TOKEN_ADDRESS, symbol: 'USDC', decimals: 6 },
-        { address: BUSD_TOKEN_ADDRESS, symbol: 'BUSD', decimals: 18 }
+        { address: contracts.USDT_TOKEN_ADDRESS, symbol: 'USDT', decimals: 6 },
+        { address: contracts.USDC_TOKEN_ADDRESS, symbol: 'USDC', decimals: 6 },
+        { address: contracts.BUSD_TOKEN_ADDRESS, symbol: 'BUSD', decimals: 18 }
       ];
 
       // Filter out zero addresses and check if they're supported by the contract

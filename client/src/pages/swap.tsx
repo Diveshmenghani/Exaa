@@ -6,34 +6,28 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
 import { useContract } from '@/hooks/use-contract';
+import { useNetwork } from '@/hooks/use-network';
+import { getNetworkConfig } from '@/lib/networks';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { COIN_TICKER } from '@/lib/branding';
 import { Loader2 } from 'lucide-react';
 
-// Token addresses from contract hook
-const ZE_TOKEN_ADDRESS = '0x00140Dc2155aA4197B88464aC8fee02D161f76fa'; // ZE token on Holesky
-const USDT_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'; // USDT placeholder
-const BUSD_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'; // BUSD placeholder
-const USDC_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'; // USDC placeholder
-const FUSD_TOKEN_ADDRESS = '0x0000000000000000000000000000000000000000'; // FUSD placeholder
-
-// Default stablecoin options (will be replaced with dynamic list from contract)
-const defaultStablecoinOptions = [
-  { id: 'USDT', name: 'Tether USD', address: USDT_TOKEN_ADDRESS, icon: '$', decimals: 6, color: 'bg-green-500' },
-  { id: 'USDC', name: 'USD Coin', address: USDC_TOKEN_ADDRESS, icon: 'C', decimals: 6, color: 'bg-blue-500' }
-];
-
-// ZE token option
-const zeToken = { id: 'ZE', name: 'ZE Token', address: ZE_TOKEN_ADDRESS, icon: 'Z', decimals: 18, color: 'bg-blue-600' };
+// Import token icons
+import zeIcon from '../assets/tokens/ZE.png';
+import usdtIcon from '../assets/tokens/USDT.png';
+import usdcIcon from '../assets/tokens/USDC.png';
+import busdIcon from '../assets/tokens/BNB.png';
+import ethIcon from '../assets/tokens/ETH.png';
 
 // Coming soon tokens (dynamic pricing)
 const comingSoonTokens = [
   { id: 'BTC', name: 'Bitcoin', icon: '₿', color: 'bg-orange-500' },
-  { id: 'ETH', name: 'Ethereum', icon: 'Ξ', color: 'bg-gray-500' }
+  { id: 'ETH', name: 'Ethereum', iconUrl: ethIcon, color: 'bg-gray-500' }
 ];
 
 export default function Swap() {
-  // Contract hooks - using new ExaaSwap functions with permit
+  // Network and contract hooks
+  const { currentNetwork } = useNetwork();
   const { 
     buyZe, 
     sellZe,
@@ -45,6 +39,20 @@ export default function Swap() {
     getStablecoinList,
     getTokenBalance
   } = useContract();
+
+  // Get network configuration
+  const networkConfig = getNetworkConfig(currentNetwork.id);
+  const contracts = networkConfig.contracts;
+
+  // Default stablecoin options using network configuration
+  const defaultStablecoinOptions = [
+    { id: 'USDT', name: 'Tether USD', address: contracts.USDT_TOKEN_ADDRESS, iconUrl: usdtIcon, decimals: 6, color: 'bg-green-500' },
+    { id: 'USDC', name: 'USD Coin', address: contracts.USDC_TOKEN_ADDRESS, iconUrl: usdcIcon, decimals: 6, color: 'bg-blue-500' },
+    { id: 'BUSD', name: 'Binance USD', address: contracts.BUSD_TOKEN_ADDRESS, iconUrl: busdIcon, decimals: 18, color: 'bg-yellow-500' }
+  ];
+
+  // ZE token option using network configuration
+  const zeToken = { id: 'ZE', name: 'ZE Token', address: contracts.ZE_TOKEN_ADDRESS, iconUrl: zeIcon, decimals: 18, color: 'bg-blue-600' };
   
   // State variables
   const [sendAmount, setSendAmount] = useState('');
@@ -83,21 +91,24 @@ export default function Swap() {
           const formattedStablecoins = stablecoins.map((coin: {address: string, symbol: string, decimals: number}) => {
             // Map colors based on symbol or use default colors
             let color = 'bg-blue-500';
-            let icon = coin.symbol.charAt(0);
+            let iconUrl = usdcIcon; // Default fallback icon
             
             if (coin.symbol.includes('USDT')) {
               color = 'bg-green-500';
-              icon = '$';
+              iconUrl = usdtIcon;
             } else if (coin.symbol.includes('USDC')) {
               color = 'bg-blue-500';
-              icon = 'C';
+              iconUrl = usdcIcon;
+            } else if (coin.symbol.includes('BUSD')) {
+              color = 'bg-yellow-500';
+              iconUrl = busdIcon;
             }
             
             return {
               id: coin.symbol,
               name: coin.symbol,
               address: coin.address,
-              icon: icon,
+              iconUrl: iconUrl,
               decimals: coin.decimals,
               color: color
             };
@@ -110,7 +121,7 @@ export default function Swap() {
         
         // Fetch ZE balance
         if (walletAddress) {
-          const zeBalanceResult = await getTokenBalance(ZE_TOKEN_ADDRESS);
+          const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS);
           setZeBalance(zeBalanceResult);
           console.log('ZE balance fetched:', zeBalanceResult);
         }
@@ -287,7 +298,7 @@ export default function Swap() {
             });
             
             // Update balances after successful swap
-            const zeBalanceResult = await getTokenBalance(ZE_TOKEN_ADDRESS);
+            const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS);
             setZeBalance(zeBalanceResult);
             const stablecoinBalanceResult = await getTokenBalance(selectedStablecoin.address);
             setStablecoinBalance(stablecoinBalanceResult);
@@ -312,7 +323,7 @@ export default function Swap() {
             });
             
             // Update balances after successful swap
-            const zeBalanceResult = await getTokenBalance(ZE_TOKEN_ADDRESS);
+            const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS);
             setZeBalance(zeBalanceResult);
             const stablecoinBalanceResult = await getTokenBalance(selectedStablecoin.address);
             setStablecoinBalance(stablecoinBalanceResult);
@@ -338,7 +349,7 @@ export default function Swap() {
             });
             
             // Update balances after successful swap
-            const zeBalanceResult = await getTokenBalance(ZE_TOKEN_ADDRESS);
+            const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS);
             setZeBalance(zeBalanceResult);
             const stablecoinBalanceResult = await getTokenBalance(selectedStablecoin.address);
             setStablecoinBalance(stablecoinBalanceResult);
@@ -363,7 +374,7 @@ export default function Swap() {
             });
             
             // Update balances after successful swap
-            const zeBalanceResult = await getTokenBalance(ZE_TOKEN_ADDRESS);
+            const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS);
             setZeBalance(zeBalanceResult);
             const stablecoinBalanceResult = await getTokenBalance(selectedStablecoin.address);
             setStablecoinBalance(stablecoinBalanceResult);
@@ -470,19 +481,19 @@ export default function Swap() {
                       <SelectTrigger className="w-[120px] bg-gray-800 border-gray-700">
                         <SelectValue>
                           <div className="flex items-center">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white ${selectedStablecoin.color}`}>
-                              {selectedStablecoin.icon}
-                            </div>
-                            {selectedStablecoin.id}
-                          </div>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white`}>
+                          <img src={selectedStablecoin.iconUrl} alt={selectedStablecoin.id} className="w-full h-full object-contain" />
+                        </div>
+                        {selectedStablecoin.id}
+                      </div>
                         </SelectValue>
                       </SelectTrigger>
                       <SelectContent className="bg-gray-800 border-gray-700">
                         {stablecoinOptions.map((token) => (
                           <SelectItem key={token.id} value={token.id}>
                             <div className="flex items-center">
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white ${token.color}`}>
-                                {token.icon}
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white`}>
+                                <img src={token.iconUrl} alt={token.id} className="w-full h-full object-contain" />
                               </div>
                               {token.id}
                             </div>
@@ -494,8 +505,8 @@ export default function Swap() {
                     // When selling ZE, user sends ZE
                     <div className="w-[120px] bg-gray-800 border border-gray-700 rounded-md px-3 py-2">
                       <div className="flex items-center">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white ${zeToken.color}`}>
-                          {zeToken.icon}
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white`}>
+                          <img src={zeToken.iconUrl} alt={zeToken.id} className="w-full h-full object-contain" />
                         </div>
                         {zeToken.id}
                       </div>
@@ -545,8 +556,8 @@ export default function Swap() {
                     // When buying ZE, user gets ZE
                     <div className="w-[120px] bg-gray-800 border border-gray-700 rounded-md px-3 py-2">
                       <div className="flex items-center">
-                        <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white ${zeToken.color}`}>
-                          {zeToken.icon}
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white`}>
+                          <img src={zeToken.iconUrl} alt={zeToken.id} className="w-full h-full object-contain" />
                         </div>
                         {zeToken.id}
                       </div>
@@ -557,8 +568,8 @@ export default function Swap() {
                       <SelectTrigger className="w-[120px] bg-gray-800 border-gray-700">
                         <SelectValue>
                           <div className="flex items-center">
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white ${selectedStablecoin.color}`}>
-                              {selectedStablecoin.icon}
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white`}>
+                              <img src={selectedStablecoin.iconUrl} alt={selectedStablecoin.id} className="w-full h-full object-contain" />
                             </div>
                             {selectedStablecoin.id}
                           </div>
@@ -568,8 +579,8 @@ export default function Swap() {
                         {stablecoinOptions.map((token) => (
                           <SelectItem key={token.id} value={token.id}>
                             <div className="flex items-center">
-                              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white ${token.color}`}>
-                                {token.icon}
+                              <div className={`w-6 h-6 rounded-full flex items-center justify-center mr-2 text-white`}>
+                                <img src={token.iconUrl} alt={token.id} className="w-full h-full object-contain" />
                               </div>
                               {token.id}
                             </div>

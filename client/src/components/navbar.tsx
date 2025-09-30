@@ -2,23 +2,18 @@ import { Link } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useWallet } from '@/hooks/use-wallet';
+import { useNetwork } from '@/hooks/use-network';
 import { APP_NAME, LOGO_PATH } from '@/lib/branding';
 import { useState } from 'react';
 import { Menu, X, ChevronDown } from 'lucide-react';
 
 export default function Navbar() {
   const { isConnected, walletAddress, connect, disconnect } = useWallet();
+  const { currentNetwork, networkId, switchNetwork } = useNetwork();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState(() => {
-    // Persist network selection in localStorage
-    return localStorage.getItem('selectedNetwork') || 'testnet';
-  });
 
   const handleNetworkChange = (network: string) => {
-    setSelectedNetwork(network);
-    localStorage.setItem('selectedNetwork', network);
-    // In a real app, this would trigger wallet network switching
-    console.log('Network changed to:', network);
+    switchNetwork(network as 'testnet' | 'mainnet');
   };
 
   const networks = {
@@ -36,7 +31,7 @@ export default function Navbar() {
               <img 
                 src={LOGO_PATH} 
                 alt="Zeritheum Logo" 
-                className="w-8 h-8 sm:w-10 sm:h-10 object-contain rounded-lg"
+                className="w-30 h-30 sm:w-16 sm:h-16 object-contain rounded-lg"
               />
               <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent">
                 {APP_NAME}
@@ -63,12 +58,12 @@ export default function Navbar() {
             </Link>
             
             {/* Network Selector */}
-            <Select value={selectedNetwork} onValueChange={handleNetworkChange}>
+            <Select value={networkId} onValueChange={handleNetworkChange}>
               <SelectTrigger className="w-[140px] bg-gray-800/50 border-gray-700">
                 <SelectValue>
                   <div className="flex items-center space-x-2">
-                    <div className={`w-2 h-2 rounded-full ${selectedNetwork === 'testnet' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
-                    <span className="text-xs">{networks[selectedNetwork as keyof typeof networks].name}</span>
+                    <div className={`w-2 h-2 rounded-full ${networkId === 'testnet' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
+                    <span className="text-xs">{currentNetwork.name}</span>
                   </div>
                 </SelectValue>
               </SelectTrigger>
@@ -120,9 +115,14 @@ export default function Navbar() {
           <div className="lg:hidden flex items-center space-x-2">
             {/* Mobile Network Indicator */}
             <div className="flex items-center space-x-1 mr-2">
-              <div className={`w-2 h-2 rounded-full ${selectedNetwork === 'testnet' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
+              <img 
+                src={LOGO_PATH} 
+                alt="Zeritheum Logo" 
+                className="w-6 h-6 object-contain rounded-lg mr-1"
+              />
+              <div className={`w-2 h-2 rounded-full ${networkId === 'testnet' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
               <span className="text-xs text-muted-foreground">
-                {selectedNetwork === 'testnet' ? 'Test' : 'BSC'}
+                {networkId === 'testnet' ? 'Test' : 'BSC'}
               </span>
             </div>
             <Button
@@ -140,6 +140,17 @@ export default function Navbar() {
         {isMobileMenuOpen && (
           <div className="lg:hidden mt-4 pb-4 border-t border-gray-800">
             <div className="flex flex-col space-y-4 pt-4">
+              {/* Logo in Mobile Menu */}
+              <div className="flex items-center mb-2">
+                <img 
+                  src={LOGO_PATH} 
+                  alt="Zeritheum Logo" 
+                  className="w-10 h-10 object-contain rounded-lg mr-2"
+                />
+                <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent">
+                  {APP_NAME}
+                </span>
+              </div>
               {/* Mobile Navigation Links */}
               <Link href="/" data-testid="link-nav-home-mobile">
                 <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
@@ -165,12 +176,12 @@ export default function Navbar() {
               {/* Mobile Network Selector */}
               <div className="py-2">
                 <span className="text-sm font-medium text-muted-foreground mb-2 block">Network</span>
-                <Select value={selectedNetwork} onValueChange={handleNetworkChange}>
+                <Select value={networkId} onValueChange={handleNetworkChange}>
                   <SelectTrigger className="w-full bg-gray-800/50 border-gray-700">
                     <SelectValue>
                       <div className="flex items-center space-x-2">
-                        <div className={`w-2 h-2 rounded-full ${selectedNetwork === 'testnet' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
-                        <span>{networks[selectedNetwork as keyof typeof networks].name}</span>
+                        <div className={`w-2 h-2 rounded-full ${networkId === 'testnet' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
+                        <span>{currentNetwork.name}</span>
                       </div>
                     </SelectValue>
                   </SelectTrigger>
@@ -191,38 +202,7 @@ export default function Navbar() {
                 </Select>
               </div>
 
-              {/* Mobile Wallet Section */}
-              <div className="pt-4 border-t border-gray-800">
-                {isConnected ? (
-                  <div className="space-y-3">
-                    <div className="text-sm text-muted-foreground" data-testid="text-wallet-address-mobile">
-                      {walletAddress?.substring(0, 10)}...{walletAddress?.substring(walletAddress.length - 8)}
-                    </div>
-                    <Button 
-                      onClick={() => {
-                        disconnect();
-                        setIsMobileMenuOpen(false);
-                      }}
-                      variant="outline"
-                      className="w-full"
-                      data-testid="button-disconnect-wallet-mobile"
-                    >
-                      Disconnect Wallet
-                    </Button>
-                  </div>
-                ) : (
-                  <Button 
-                    onClick={() => {
-                      connect();
-                      setIsMobileMenuOpen(false);
-                    }}
-                    className="neon-button w-full py-3 rounded-lg text-white font-semibold"
-                    data-testid="button-connect-wallet-mobile"
-                  >
-                    Connect Wallet
-                  </Button>
-                )}
-              </div>
+              {/* Mobile Wallet Section - Removed as per instruction */}
             </div>
           </div>
         )}
