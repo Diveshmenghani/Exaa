@@ -5,7 +5,7 @@ export const BRANDING = {
   APP_NAME: 'Zeritheum',
   APP_TAGLINE: 'The Future of Digital Currency',
   COIN_TICKER: 'ZE',
-  STAKED_DERIVATIVE: 'osZE',
+  STAKED_DERIVATIVE: 'ZE',
   CURRENCY_SYMBOL: 'ZE',
   LOGO_PATH: logoPath,
   // Pricing placeholder (can be dynamic)

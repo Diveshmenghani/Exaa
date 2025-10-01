@@ -260,7 +260,7 @@ export default function Stake() {
   // handleUnstake function removed - now handled per-item in unstake tab
 
   return (
-    <div className="min-h-screen pt-24 pb-20 bg-black">
+    <div className="min-h-screen pt-40 pb-20 bg-black">
       <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
         {/* Main Staking Interface */}
         <Card className="glass-card mb-8">
@@ -278,7 +278,7 @@ export default function Stake() {
 
               <TabsContent value="stake" className="space-y-6">
                 {/* Stake Amount Display/Input */}
-                <div className="text-center mb-8 p-6 bg-primary/10 rounded-xl border border-primary/30">
+                <div className="text-center mb-8 p-6 bg-primary/10 rounded-xl ">
                   <div className="text-sm font-medium mb-2">Amount to Stake</div>
                   {isEditingAmount ? (
                     <div className="flex items-center justify-center space-x-2">
@@ -376,7 +376,7 @@ export default function Stake() {
                 </div>
 
                 {/* Reward Calculation */}
-                <div className="text-center mb-8 p-4 bg-primary/10 rounded-lg border border-primary/30">
+                <div className="text-center mb-8 p-4 bg-primary/10 rounded-lg">
                   <div className="text-sm font-medium mb-2">Estimated Rewards</div>
                   <div className="text-2xl font-bold text-primary" data-testid="estimated-rewards">
                     {calculateRewards().toLocaleString()} {COIN_TICKER}
@@ -387,7 +387,7 @@ export default function Stake() {
                 </div>
 
                 {/* Referrer Input - Moved to bottom */}
-                {isConnected && !userStakes?.hasReferrer && (
+                {/* {isConnected && !userStakes?.hasReferrer && (
                   <div className="p-4 bg-primary/10 rounded-lg border border-primary/30 mb-8">
                     <Label htmlFor="referrer" className="text-sm font-medium mb-2 block">Add Referrer (Optional)</Label>
                     <div className="flex gap-2">
@@ -400,7 +400,7 @@ export default function Stake() {
                       />
                     </div>
                   </div>
-                )}
+                )} */}
               </TabsContent>
 
               <TabsContent value="unstake" className="space-y-6">

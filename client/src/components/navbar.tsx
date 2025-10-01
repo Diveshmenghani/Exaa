@@ -22,8 +22,8 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="fixed top-0 w-full z-50 glass-card">
-      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
+    <nav className="fixed top-0 w-full z-50 glass-card-transparent">
+      <div className="container mx-auto px-4 sm:px-6 py-2 sm:py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link href="/" data-testid="link-home">
@@ -31,9 +31,9 @@ export default function Navbar() {
               <img 
                 src={LOGO_PATH} 
                 alt="Zeritheum Logo" 
-                className="w-30 h-30 sm:w-16 sm:h-16 object-contain rounded-lg"
+                className="w-8 h-8 sm:w-12 sm:h-12 lg:w-16 lg:h-16 object-contain rounded-lg"
               />
-              <span className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent">
+              <span className="text-sm sm:text-lg lg:text-2xl font-bold bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent">
                 {APP_NAME}
               </span>
             </div>
@@ -115,11 +115,6 @@ export default function Navbar() {
           <div className="lg:hidden flex items-center space-x-2">
             {/* Mobile Network Indicator */}
             <div className="flex items-center space-x-1 mr-2">
-              <img 
-                src={LOGO_PATH} 
-                alt="Zeritheum Logo" 
-                className="w-6 h-6 object-contain rounded-lg mr-1"
-              />
               <div className={`w-2 h-2 rounded-full ${networkId === 'testnet' ? 'bg-orange-400' : 'bg-green-400'}`}></div>
               <span className="text-xs text-muted-foreground">
                 {networkId === 'testnet' ? 'Test' : 'BSC'}
@@ -140,17 +135,6 @@ export default function Navbar() {
         {isMobileMenuOpen && (
           <div className="lg:hidden mt-4 pb-4 border-t border-gray-800">
             <div className="flex flex-col space-y-4 pt-4">
-              {/* Logo in Mobile Menu */}
-              <div className="flex items-center mb-2">
-                <img 
-                  src={LOGO_PATH} 
-                  alt="Zeritheum Logo" 
-                  className="w-10 h-10 object-contain rounded-lg mr-2"
-                />
-                <span className="text-xl font-bold bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent">
-                  {APP_NAME}
-                </span>
-              </div>
               {/* Mobile Navigation Links */}
               <Link href="/" data-testid="link-nav-home-mobile">
                 <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
@@ -189,7 +173,7 @@ export default function Navbar() {
                     <SelectItem value="testnet">
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 rounded-full bg-orange-400"></div>
-                        <span>Holosky Testnet</span>
+                        <span>Testnet</span>
                       </div>
                     </SelectItem>
                     <SelectItem value="mainnet">

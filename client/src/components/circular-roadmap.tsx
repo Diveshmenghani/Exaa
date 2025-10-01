@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import roadmapImage from '@assets/image_1759120300420.png';
+import roadmapImage from '../assets/tokens/ZE.png';
 
 interface RoadmapStep {
   id: number;

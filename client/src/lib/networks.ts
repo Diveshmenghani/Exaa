@@ -24,7 +24,7 @@ export interface NetworkConfig {
 export const NETWORKS: Record<string, NetworkConfig> = {
   testnet: {
     id: 'testnet',
-    name: 'Ethereum Holesky Testnet',
+    name: 'Holesky Testnet',
     chainId: 17000,
     rpcUrl: 'https://holesky.drpc.org',
     rpcUrls: [
@@ -41,12 +41,12 @@ export const NETWORKS: Record<string, NetworkConfig> = {
     },
     contracts: {
       ZE_TOKEN_ADDRESS: '0x00140Dc2155aA4197B88464aC8fee02D161f76fa',
-      USDT_TOKEN_ADDRESS: '0x0000000000000000000000000000000000000000',
-      USDC_TOKEN_ADDRESS: '0x0000000000000000000000000000000000000000',
+      USDT_TOKEN_ADDRESS: '0x74b674aE859D5d1D910738FB881119CB4b6A6a03', // Holesky testnet USDT
+      USDC_TOKEN_ADDRESS: '0x2Ca330C1F35579AA9f7e5d34D6E173d3a87Ab24B', // Holesky testnet USDC
       BUSD_TOKEN_ADDRESS: '0x0000000000000000000000000000000000000000',
       FUSD_TOKEN_ADDRESS: '0x0000000000000000000000000000000000000000',
-      EXAA_SWAP_ADDRESS: '0x00140Dc2155aA4197B88464aC8fee02D161f76fa',
-      EXAA_STAKING_ADDRESS: '0x6e24A5Ec49aE76Cd720FB6550aA0a1D57C823e0F',
+      EXAA_SWAP_ADDRESS: '0x18c740E313e1a585F6EAD9D5c94e03aC763cAaa7', // Separate swap contract address
+      EXAA_STAKING_ADDRESS: '0xa1D318b4c6F68f72d32211857Bd98e31e11143d0',
     },
   },
   mainnet: {

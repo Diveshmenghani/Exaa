@@ -10,7 +10,7 @@ import { useNetwork } from '@/hooks/use-network';
 import { getNetworkConfig } from '@/lib/networks';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { COIN_TICKER } from '@/lib/branding';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Info } from 'lucide-react';
 
 // Import token icons
 import zeIcon from '../assets/tokens/ZE.png';
@@ -25,14 +25,32 @@ const comingSoonTokens = [
   { id: 'ETH', name: 'Ethereum', iconUrl: ethIcon, color: 'bg-gray-500' }
 ];
 
+// Helper function to format token balances
+const formatTokenBalance = (balance: string, decimals: number = 4): string => {
+  const numBalance = parseFloat(balance);
+  if (isNaN(numBalance) || numBalance === 0) return '0.0000';
+  
+  // For very large numbers (> 1M), show in abbreviated format
+  if (numBalance >= 1000000) {
+    return (numBalance / 1000000).toFixed(2) + 'M';
+  }
+  // For large numbers (> 1K), show in abbreviated format
+  else if (numBalance >= 1000) {
+    return (numBalance / 1000).toFixed(2) + 'K';
+  }
+  // For normal numbers, show with specified decimals
+  else {
+    return numBalance.toFixed(decimals);
+  }
+};
+
 export default function Swap() {
   // Network and contract hooks
   const { currentNetwork } = useNetwork();
   const { 
     buyZe, 
     sellZe,
-    buyZeWithPermit,
-    sellZeWithPermit,
+
     calculateZeAmountOut, 
     calculateStablecoinAmountOut, 
     getZePrice,
@@ -121,9 +139,16 @@ export default function Swap() {
         
         // Fetch ZE balance
         if (walletAddress) {
-          const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS);
+          const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS, walletAddress);
           setZeBalance(zeBalanceResult);
           console.log('ZE balance fetched:', zeBalanceResult);
+          
+          // Fetch initial stablecoin balance (for the first/default stablecoin)
+          if (stablecoins && stablecoins.length > 0) {
+            const initialStablecoinBalance = await getTokenBalance(stablecoins[0].address, walletAddress);
+            setStablecoinBalance(initialStablecoinBalance);
+            console.log(`Initial ${stablecoins[0].symbol} balance fetched:`, initialStablecoinBalance);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch initial data:', error);
@@ -222,7 +247,7 @@ export default function Swap() {
     if (isConnected && walletAddress) {
       setIsLoadingBalances(true);
       try {
-        const balance = await getTokenBalance(newStablecoin.address);
+        const balance = await getTokenBalance(newStablecoin.address, walletAddress);
         setStablecoinBalance(balance);
         console.log(`${newStablecoin.id} balance fetched:`, balance);
       } catch (error) {
@@ -281,106 +306,50 @@ export default function Swap() {
       const minAmountOut = (parseFloat(getAmount) * (100 - slippagePercent) / 100).toString();
       
       if (swapDirection === 'buy') {
-        // Try buyZeWithPermit first (handles approval with EIP-2612 permit)
+        // Use traditional approval method
         toast({
-          title: 'Preparing Transaction',
-          description: `Please sign the permit message in your wallet to approve ${selectedStablecoin.id} spending.`,
+          title: 'Processing Purchase',
+          description: `Please approve ${selectedStablecoin.id} spending and complete the swap transaction in your wallet.`,
         });
         
-        try {
-          // First try with permit (gasless approval)
-          const success = await buyZeWithPermit(selectedStablecoin.address, sendAmount, minAmountOut);
-          
-          if (success) {
-            toast({
-              title: 'Purchase Successful!',
-              description: `Successfully bought ${getAmount} ZE tokens with ${sendAmount} ${selectedStablecoin.id}.`,
-            });
-            
-            // Update balances after successful swap
-            const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS);
-            setZeBalance(zeBalanceResult);
-            const stablecoinBalanceResult = await getTokenBalance(selectedStablecoin.address);
-            setStablecoinBalance(stablecoinBalanceResult);
-          } else {
-            throw new Error('Transaction failed or was rejected');
-          }
-        } catch (permitError) {
-          console.error('Permit method failed, falling back to regular swap:', permitError);
-          
+        const success = await buyZe(selectedStablecoin.address, sendAmount, minAmountOut);
+        
+        if (success) {
           toast({
-            title: 'Permit Failed',
-            description: 'Falling back to regular approval. Please approve the token spending in your wallet...',
+            title: 'Purchase Successful!',
+            description: `Successfully bought ${getAmount} ZE tokens with ${sendAmount} ${selectedStablecoin.id}.`,
           });
           
-          // Fallback to regular buyZe if permit fails
-          const success = await buyZe(selectedStablecoin.address, sendAmount, minAmountOut);
-          
-          if (success) {
-            toast({
-              title: 'Purchase Successful!',
-              description: `Successfully bought ${getAmount} ZE tokens with ${sendAmount} ${selectedStablecoin.id}.`,
-            });
-            
-            // Update balances after successful swap
-            const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS);
-            setZeBalance(zeBalanceResult);
-            const stablecoinBalanceResult = await getTokenBalance(selectedStablecoin.address);
-            setStablecoinBalance(stablecoinBalanceResult);
-          } else {
-            throw new Error('Transaction failed or was rejected');
-          }
+          // Update balances after successful swap
+          const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS, walletAddress);
+          setZeBalance(zeBalanceResult);
+          const stablecoinBalanceResult = await getTokenBalance(selectedStablecoin.address, walletAddress);
+          setStablecoinBalance(stablecoinBalanceResult);
+        } else {
+          throw new Error('Transaction failed or was rejected');
         }
       } else {
-        // Try sellZeWithPermit first (handles approval with EIP-2612 permit)
+        // Use traditional approval method
         toast({
-          title: 'Preparing Transaction',
-          description: `Please sign the permit message in your wallet to approve ZE token spending.`,
+          title: 'Processing Sale',
+          description: `Please approve ZE token spending and complete the swap transaction in your wallet.`,
         });
         
-        try {
-          // First try with permit (gasless approval)
-          const success = await sellZeWithPermit(sendAmount, selectedStablecoin.address, minAmountOut);
-          
-          if (success) {
-            toast({
-              title: 'Sale Successful!',
-              description: `Successfully sold ${sendAmount} ZE tokens for ${getAmount} ${selectedStablecoin.id}.`,
-            });
-            
-            // Update balances after successful swap
-            const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS);
-            setZeBalance(zeBalanceResult);
-            const stablecoinBalanceResult = await getTokenBalance(selectedStablecoin.address);
-            setStablecoinBalance(stablecoinBalanceResult);
-          } else {
-            throw new Error('Transaction failed or was rejected');
-          }
-        } catch (permitError) {
-          console.error('Permit method failed, falling back to regular swap:', permitError);
-          
+        const success = await sellZe(sendAmount, selectedStablecoin.address, minAmountOut);
+        
+        if (success) {
           toast({
-            title: 'Permit Failed',
-            description: 'Falling back to regular approval. Please approve the token spending in your wallet...',
+            title: 'Sale Successful!',
+            description: `Successfully sold ${sendAmount} ZE tokens for ${getAmount} ${selectedStablecoin.id}.`,
           });
           
-          // Fallback to regular sellZe if permit fails
-          const success = await sellZe(sendAmount, selectedStablecoin.address, minAmountOut);
-          
-          if (success) {
-            toast({
-              title: 'Sale Successful!',
-              description: `Successfully sold ${sendAmount} ZE tokens for ${getAmount} ${selectedStablecoin.id}.`,
-            });
-            
-            // Update balances after successful swap
-            const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS);
-            setZeBalance(zeBalanceResult);
-            const stablecoinBalanceResult = await getTokenBalance(selectedStablecoin.address);
-            setStablecoinBalance(stablecoinBalanceResult);
-          } else {
-            throw new Error('Transaction failed or was rejected');
-          }
+          // Update balances after successful swap
+          const zeBalanceResult = await getTokenBalance(contracts.ZE_TOKEN_ADDRESS, walletAddress);
+          setZeBalance(zeBalanceResult);
+          const stablecoinBalanceResult = await getTokenBalance(selectedStablecoin.address, walletAddress);
+          setStablecoinBalance(stablecoinBalanceResult);
+        } else {
+          throw new Error('Transaction failed or was rejected');
         }
       }
       
@@ -422,14 +391,14 @@ export default function Swap() {
 
   return (
     <div className="min-h-screen pt-24 pb-20 bg-black">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
+      <div className="container mx-auto px-6 xl:max-w-full xl:px-8 2xl:px-16">
+        <div className="text-center mb-16 mt-12">
           <h1 className="text-5xl font-bold mb-4">
             <span className="bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
               Token Swap
             </span>
           </h1>
-          <p className="text-xl text-muted-foreground">Exchange tokens instantly at the best rates</p>
+          <p className="text-xl text-muted-foreground">Exchange tokens instantly</p>
         </div>
 
         <div className="max-w-md mx-auto">
@@ -445,8 +414,8 @@ export default function Swap() {
                     ) : (
                       <span>
                         {swapDirection === 'buy' 
-                          ? `${parseFloat(stablecoinBalance).toFixed(4)} ${selectedStablecoin.id}`
-                          : `${parseFloat(zeBalance).toFixed(4)} ZE`}
+                          ? `${formatTokenBalance(stablecoinBalance)} ${selectedStablecoin.id}`
+                          : `${formatTokenBalance(zeBalance)} ZE`}
                       </span>
                     )}
                     {isConnected && (
@@ -537,8 +506,8 @@ export default function Swap() {
                     ) : (
                       <span>
                         {swapDirection === 'buy' 
-                          ? `${parseFloat(zeBalance).toFixed(4)} ZE`
-                          : `${parseFloat(stablecoinBalance).toFixed(4)} ${selectedStablecoin.id}`}
+                          ? `${formatTokenBalance(zeBalance)} ZE`
+                          : `${formatTokenBalance(stablecoinBalance)} ${selectedStablecoin.id}`}
                       </span>
                     )}
                   </div>
@@ -688,6 +657,20 @@ export default function Swap() {
                  ) : (
                    <span>Exchange Rate: 1 ZE = $0.1600 USD</span>
                  )}
+               </div>
+
+               {/* Approval Information */}
+               <div className="mt-4 p-3 bg-gray-900 rounded-lg border border-gray-700">
+                 <div className="flex items-start space-x-2">
+                   <Info className="h-4 w-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                   <div className="text-xs text-gray-400">
+                     <div className="font-medium text-gray-300 mb-1">Token Approval System</div>
+                     <div className="space-y-1">
+                       <div><span className="text-blue-400 font-medium">Approval Process:</span> You'll need to approve token spending before each swap transaction.</div>
+                       <div><span className="text-orange-400 font-medium">Gas Required:</span> Both approval and swap transactions require gas fees.</div>
+                     </div>
+                   </div>
+                 </div>
                </div>
             </CardContent>
           </Card>

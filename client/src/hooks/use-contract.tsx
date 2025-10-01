@@ -92,13 +92,13 @@ interface ContractContextType {
   isLoading: boolean;
   error: string | null;
   // Token contract functions
-  getTokenBalance: (address: string) => Promise<string>;
+  getTokenBalance: (tokenAddress: string, walletAddress?: string) => Promise<string>;
   checkContractDeployment: () => Promise<boolean>;
   // Staking contract functions
   approveTokens: (amount: string) => Promise<boolean>;
   approveAndStake: (amount: string, lockYears: number, referrer: string) => Promise<boolean>;
   stake: (amount: string, lockYears: number, referrer: string) => Promise<boolean>;
-  stakeWithPermit: (amount: string, lockYears: number, referrer: string, deadline: number, v: number, r: string, s: string) => Promise<boolean>;
+
   unstake: (stakeIndex: number) => Promise<boolean>;
   addReferrer: (referrer: string) => Promise<boolean>;
   getUserInfo: (address: string) => Promise<any>;
@@ -107,8 +107,7 @@ interface ContractContextType {
   // New ExaaSwap contract functions
   buyZe: (stablecoinAddress: string, stablecoinAmount: string, minZeAmount: string) => Promise<boolean>;
   sellZe: (zeAmount: string, stablecoinAddress: string, minStablecoinAmount: string) => Promise<boolean>;
-  buyZeWithPermit: (stablecoinAddress: string, stablecoinAmount: string, minZeAmount: string) => Promise<boolean>;
-  sellZeWithPermit: (zeAmount: string, stablecoinAddress: string, minStablecoinAmount: string) => Promise<boolean>;
+
   calculateZeAmountOut: (stablecoinAddress: string, stablecoinAmount: string) => Promise<string>;
   calculateStablecoinAmountOut: (zeAmount: string, stablecoinAddress: string) => Promise<string>;
   getZePrice: () => Promise<string>;
@@ -125,12 +124,10 @@ const ContractContext = createContext<ContractContextType | undefined>(undefined
 const ERC20_ABI = [
   "function approve(address spender, uint256 amount) external returns (bool)",
   "function allowance(address owner, address spender) external view returns (uint256)",
-  "function nonces(address owner) external view returns (uint256)",
   "function name() external view returns (string)",
   "function symbol() external view returns (string)",
   "function decimals() external view returns (uint8)",
-  "function version() external view returns (string)",
-  "function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external"
+  "function version() external view returns (string)"
 ];
 
 export function ContractProvider({ children }: { children: React.ReactNode }) {
@@ -239,68 +236,9 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     return true;
   };
 
-  // Stake tokens with permit
-  const stakeWithPermit = async (amount: string, lockYears: number, referrer: string, deadline: number, v: number, r: string, s: string): Promise<boolean> => {
-    if (!stakingContract || !isConnected) {
-      setError('Wallet not connected or contract not initialized');
-      return false;
-    }
 
-    // Ensure we're on the correct network
-    const networkOk = await ensureCorrectNetwork();
-    if (!networkOk) {
-      return false;
-    }
-
-    try {
-      setIsLoading(true);
-      
-      // Validate and format amount
-      if (!amount || isNaN(Number(amount)) || Number(amount) <= 0) {
-        setError('Invalid stake amount');
-        setIsLoading(false);
-        return false;
-      }
-      
-      // Convert string amount to Wei (proper format for contract)
-      const amountInWei = ethers.utils.parseEther(amount.toString().trim());
-      
-      // Validate lock period (must be positive integer)
-      if (!Number.isInteger(lockYears) || lockYears <= 0) {
-        setError('Lock period must be a positive integer');
-        setIsLoading(false);
-        return false;
-      }
-      
-      // Ensure referrer address is valid
-      const formattedReferrer = referrer && referrer !== '0x0000000000000000000000000000000000000000' 
-        ? ethers.utils.getAddress(referrer) // Normalize address format
-        : '0x0000000000000000000000000000000000000000';
-      
-      console.log('Staking with permit parameters:', {
-        amount: amount,
-        amountInWei: amountInWei.toString(),
-        lockYears: lockYears,
-        referrer: formattedReferrer,
-        deadline: deadline,
-        v: v,
-        r: r,
-        s: s
-      });
-      
-      const tx = await stakingContract.stakeWithPermit(amountInWei, lockYears, formattedReferrer, deadline, v, r, s);
-      await tx.wait();
-      setIsLoading(false);
-      return true;
-    } catch (err: any) {
-      console.error('Error staking tokens with permit:', err);
-      setError(err.message || 'Failed to stake tokens with permit');
-      setIsLoading(false);
-      return false;
-    }
-  };
   
-  // Legacy stake function (keeping for backward compatibility)
+  // Stake function using traditional approval
   const stake = async (amount: string, lockYears: number, referrer: string): Promise<boolean> => {
     if (!stakingContract || !isConnected) {
       setError('Wallet not connected or contract not initialized');
@@ -332,7 +270,7 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
         ? ethers.utils.getAddress(referrer) // Normalize address format
         : '0x0000000000000000000000000000000000000000';
       
-      console.log('Using stakeWithPermit is recommended. Falling back to stake with parameters:', {
+      console.log('Staking with traditional approval parameters:', {
         amount: amount,
         amountInWei: amountInWei.toString(),
         lockYears: lockYears,
@@ -879,9 +817,15 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Get token balance for a specific address
-  const getTokenBalance = async (address: string): Promise<string> => {
-    if (!tokenContract || !address) {
+  // Get token balance for a specific token contract address
+  const getTokenBalance = async (tokenAddress: string, walletAddress?: string): Promise<string> => {
+    if (!tokenAddress) {
+      return '0';
+    }
+
+    // Use provided wallet address or get from wallet hook
+    const targetWalletAddress = walletAddress || (await signer?.getAddress());
+    if (!targetWalletAddress) {
       return '0';
     }
 
@@ -889,19 +833,55 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
       const networkConfig = getNetworkConfig(currentNetwork.id);
       const contracts = networkConfig.contracts;
 
-      // Check if the contract exists by getting its code
-      const provider = tokenContract.provider;
-      const code = await provider.getCode(contracts.ZE_TOKEN_ADDRESS);
-      
-      if (code === '0x') {
-        console.error('Token contract not deployed at address:', contracts.ZE_TOKEN_ADDRESS);
+      // Create a contract instance for the specific token
+      let targetContract;
+      if (tokenAddress.toLowerCase() === contracts.ZE_TOKEN_ADDRESS.toLowerCase()) {
+        // Use the existing ZE token contract
+        targetContract = tokenContract;
+      } else {
+        // Create a new contract instance for stablecoins
+        if (!signer?.provider) {
+          console.error('Provider not available');
+          return '0';
+        }
+        targetContract = new ethers.Contract(tokenAddress, [
+          "function balanceOf(address owner) external view returns (uint256)",
+          "function decimals() external view returns (uint8)"
+        ], signer.provider);
+      }
+
+      if (!targetContract) {
+        console.error('Could not create contract instance for address:', tokenAddress);
         return '0';
       }
 
-      const balance = await tokenContract.balanceOf(address);
-      return ethers.utils.formatEther(balance);
+      // Check if the contract exists by getting its code
+      const provider = targetContract.provider;
+      const code = await provider.getCode(tokenAddress);
+      
+      if (code === '0x') {
+        console.error('Token contract not deployed at address:', tokenAddress);
+        return '0';
+      }
+
+      // Get balance and decimals
+      const balance = await targetContract.balanceOf(targetWalletAddress);
+      
+      // Get decimals for proper formatting
+      let decimals = 18; // Default to 18 decimals
+      try {
+        decimals = await targetContract.decimals();
+      } catch (decimalsError) {
+        // If decimals() call fails, use defaults based on token type
+        if (tokenAddress.toLowerCase() === contracts.USDT_TOKEN_ADDRESS.toLowerCase() ||
+            tokenAddress.toLowerCase() === contracts.USDC_TOKEN_ADDRESS.toLowerCase()) {
+          decimals = 6; // USDT and USDC typically use 6 decimals
+        }
+      }
+
+      return ethers.utils.formatUnits(balance, decimals);
     } catch (err: any) {
-      const errorMessage = handleRpcError(err, 'Error fetching token balance');
+      const errorMessage = handleRpcError(err, `Error fetching token balance for ${tokenAddress}`);
       console.error(errorMessage);
       return '0';
     }
@@ -909,57 +889,7 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
 
   // New ExaaSwap functions for stablecoin swaps
 
-  // Helper function to generate permit signature for ERC20 tokens
-  const generatePermitSignatureAddressDeprecated = async (
-    tokenAddress: string,
-    owner: string,
-    spender: string,
-    value: ethers.BigNumber,
-    deadline: number,
-    tokenName: string,
-    chainId: number = 17000 // Holesky testnet
-  ): Promise<{ v: number; r: string; s: string }> => {
-    if (!signer) {
-      throw new Error('Signer not available');
-    }
 
-    const domain = {
-      name: tokenName,
-      version: '1',
-      chainId: chainId,
-      verifyingContract: tokenAddress,
-    };
-
-    const types = {
-      Permit: [
-        { name: 'owner', type: 'address' },
-        { name: 'spender', type: 'address' },
-        { name: 'value', type: 'uint256' },
-        { name: 'nonce', type: 'uint256' },
-        { name: 'deadline', type: 'uint256' },
-      ],
-    };
-
-    // Get nonce from token contract
-    const tokenContract = new ethers.Contract(tokenAddress, [
-      "function nonces(address owner) external view returns (uint256)"
-    ], signer);
-    
-    const nonce = await tokenContract.nonces(owner);
-
-    const message = {
-      owner,
-      spender,
-      value: value.toString(),
-      nonce: nonce.toString(),
-      deadline,
-    };
-
-    const signature = await (signer as any)._signTypedData(domain, types, message);
-    const { v, r, s } = ethers.utils.splitSignature(signature);
-
-    return { v, r, s };
-  };
 
   // Helper function to get stablecoin decimals from contract
   const getStablecoinDecimalsFromMapping = async (stablecoinAddress: string): Promise<number> => {
@@ -1186,66 +1116,7 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
 
 
   // Generate permit signature for EIP-2612 tokens
-  const generatePermitSignature = async (
-    tokenContract: ethers.Contract,
-    owner: string,
-    spender: string,
-    value: string,
-    deadline: number
-  ) => {
-    try {
-      // Get token details for domain
-      const name = await tokenContract.name();
-      const version = "1"; // Default version if not available
-      let chainId = (await signer?.getChainId()) || 17000; // Holesky chainId
-      
-      // Get nonce for the owner
-      const nonce = await tokenContract.nonces(owner);
-      
-      // Create the EIP-712 domain
-      const domain = {
-        name,
-        version,
-        chainId,
-        verifyingContract: tokenContract.address
-      };
-      
-      // Define the types for EIP-712 typed data
-      const types = {
-        Permit: [
-          { name: "owner", type: "address" },
-          { name: "spender", type: "address" },
-          { name: "value", type: "uint256" },
-          { name: "nonce", type: "uint256" },
-          { name: "deadline", type: "uint256" }
-        ]
-      };
-      
-      // Create the message object
-      const message = {
-        owner,
-        spender,
-        value,
-        nonce,
-        deadline
-      };
-      
-      // Sign the typed data
-      const signature = await (signer as any)?._signTypedData(domain, types, message);
-      
-      // Split the signature
-      const sig = ethers.utils.splitSignature(signature);
-      
-      return {
-        v: sig.v,
-        r: sig.r,
-        s: sig.s
-      };
-    } catch (error) {
-      console.error("Error generating permit signature:", error);
-      throw error;
-    }
-  };
+
 
   // Helper function to get stablecoin decimals
   const getStablecoinDecimals = async (stablecoinAddress: string): Promise<number> => {
@@ -1262,186 +1133,15 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Buy ZE tokens with permit (no separate approval needed)
-  const buyZeWithPermit = async (
-    stablecoinAddress: string,
-    stablecoinAmount: string,
-    minZeAmount: string
-  ): Promise<boolean> => {
-    if (!signer || !swapContract) {
-      setError("Wallet not connected or contract not initialized");
-      return false;
-    }
 
-    setIsLoading(true);
-    setError(null);
 
-    try {
-      const networkConfig = getNetworkConfig(currentNetwork.id);
-      const contracts = networkConfig.contracts;
-      
-      const owner = await signer.getAddress();
-      const spender = contracts.EXAA_SWAP_ADDRESS;
-      
-      // Convert amounts to wei
-      const stablecoinDecimals = await getStablecoinDecimals(stablecoinAddress);
-      const stablecoinAmountWei = ethers.utils.parseUnits(stablecoinAmount, stablecoinDecimals);
-      const minZeAmountWei = ethers.utils.parseUnits(minZeAmount, 18); // ZE token has 18 decimals
-      
-      // Set deadline to 20 minutes from now
-      const deadline = Math.floor(Date.now() / 1000) + 20 * 60;
-      
-      // Get stablecoin contract
-      const stablecoinContract = new ethers.Contract(stablecoinAddress, ERC20_ABI, signer);
-      
-      // Generate permit signature
-      const { v, r, s } = await generatePermitSignature(
-        stablecoinContract,
-        owner,
-        spender,
-        stablecoinAmountWei.toString(),
-        deadline
-      );
-      
-      console.log("Buying ZE with permit:", {
-        stablecoinAddress,
-        stablecoinAmountWei: stablecoinAmountWei.toString(),
-        minZeAmountWei: minZeAmountWei.toString(),
-        deadline,
-        v, r, s
-      });
-      
-      // Estimate gas first to catch potential failures
-      try {
-        await swapContract.estimateGas.buyZeWithPermit(
-          stablecoinAddress,
-          stablecoinAmountWei,
-          minZeAmountWei,
-          deadline,
-          v,
-          r,
-          s
-        );
-      } catch (gasError: any) {
-        console.error('Gas estimation failed:', gasError);
-        throw new Error(`Transaction would fail: ${gasError?.reason || gasError?.message || 'Gas estimation failed'}`);
-      }
-      
-      // Call the buyZeWithPermit function
-      const tx = await swapContract.buyZeWithPermit(
-        stablecoinAddress,
-        stablecoinAmountWei,
-        minZeAmountWei,
-        deadline,
-        v,
-        r,
-        s,
-        { gasLimit: 600000 } // Increased gas limit
-      );
-      
-      // Wait for transaction to be mined
-      const receipt = await tx.wait();
-      console.log("Transaction receipt:", receipt);
-      
-      // Check if transaction was successful
-      if (receipt.status === 1) {
-        return true;
-      } else {
-        setError("Transaction failed");
-        return false;
-      }
-    } catch (error: any) {
-      console.error("Error buying ZE with permit:", error);
-      setError(error.message || "Failed to buy ZE tokens");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  // Sell ZE tokens with permit (no separate approval needed)
-  const sellZeWithPermit = async (
-    zeAmount: string,
-    stablecoinAddress: string,
-    minStablecoinAmount: string
-  ): Promise<boolean> => {
-    if (!signer || !swapContract || !tokenContract) {
-      setError("Wallet not connected or contract not initialized");
-      return false;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const networkConfig = getNetworkConfig(currentNetwork.id);
-      const contracts = networkConfig.contracts;
-      
-      const owner = await signer.getAddress();
-      const spender = contracts.EXAA_SWAP_ADDRESS;
-      
-      // Convert amounts to wei
-      const zeAmountWei = ethers.utils.parseUnits(zeAmount, 18); // ZE token has 18 decimals
-      const stablecoinDecimals = await getStablecoinDecimals(stablecoinAddress);
-      const minStablecoinAmountWei = ethers.utils.parseUnits(minStablecoinAmount, stablecoinDecimals);
-      
-      // Set deadline to 20 minutes from now
-      const deadline = Math.floor(Date.now() / 1000) + 20 * 60;
-      
-      // Generate permit signature for ZE token
-      const { v, r, s } = await generatePermitSignature(
-        tokenContract,
-        owner,
-        spender,
-        zeAmountWei.toString(),
-        deadline
-      );
-      
-      console.log("Selling ZE with permit:", {
-        zeAmountWei: zeAmountWei.toString(),
-        stablecoinAddress,
-        minStablecoinAmountWei: minStablecoinAmountWei.toString(),
-        deadline,
-        v, r, s
-      });
-      
-      // Call the sellZeWithPermit function
-      const tx = await swapContract.sellZeWithPermit(
-        stablecoinAddress,
-        zeAmountWei,
-        minStablecoinAmountWei,
-        deadline,
-        v,
-        r,
-        s,
-        { gasLimit: 500000 }
-      );
-      
-      // Wait for transaction to be mined
-      const receipt = await tx.wait();
-      console.log("Transaction receipt:", receipt);
-      
-      // Check if transaction was successful
-      if (receipt.status === 1) {
-        return true;
-      } else {
-        setError("Transaction failed");
-        return false;
-      }
-    } catch (error: any) {
-      console.error("Error selling ZE with permit:", error);
-      setError(error.message || "Failed to sell ZE tokens");
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   // Get ZE price directly from contract
   const getZePrice = async (): Promise<string> => {
     if (!swapContract) {
       console.warn("Contract not initialized, returning fallback ZE price");
-      return "1.0"; // Fallback price
+      return "0.16"; // Fallback price
     }
 
     try {
@@ -1455,7 +1155,7 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
     } catch (error: any) {
       const errorMessage = handleRpcError(error, "Error getting ZE price");
       console.warn(errorMessage, "- Using fallback price");
-      return "1.0"; // Fallback price instead of "0"
+      return "0.16"; // Fallback price instead of "0"
     }
   };
 
@@ -1551,7 +1251,6 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
           approveTokens,
           approveAndStake,
           stake,
-          stakeWithPermit,
           unstake,
           addReferrer,
           getUserInfo,
@@ -1559,8 +1258,6 @@ export function ContractProvider({ children }: { children: React.ReactNode }) {
           getUserStakes,
           buyZe,
           sellZe,
-          buyZeWithPermit,
-          sellZeWithPermit,
           calculateZeAmountOut,
           calculateStablecoinAmountOut,
           getZePrice,

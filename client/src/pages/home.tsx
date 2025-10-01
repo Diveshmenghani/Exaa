@@ -34,13 +34,13 @@ export default function Home() {
           <SplineBackground />
         </div>
         
-        <div className="container mx-auto max-w-7xl relative z-10">
+        <div className="container mx-auto max-w-7xl xl:max-w-full xl:px-8 2xl:px-16 relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             
             {/* Left Side - Hero Text */}
-            <div className="space-y-8">
-              <div>
-                <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
+            <div className="space-y-4 sm:space-y-8 px-4 sm:pl-10">
+              <div className="px-2 sm:pl-20">
+                <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
                   <span className="bg-gradient-to-r from-cyan-400 via-purple-600 to-pink-500 bg-clip-text text-transparent">
                     Stake {COIN_TICKER}
                   </span>
@@ -53,85 +53,85 @@ export default function Home() {
                 </h1>
               </div>
               
-              <div className="space-y-4 text-gray-300 text-base sm:text-lg max-w-lg">
+              <div className="space-y-2 sm:space-y-4 text-gray-300 text-sm sm:text-base sm:text-lg max-w-lg px-2 sm:pl-20">
                 <p>Go Solo or Pool with others.</p>
                 <p>Stake or unstake in seconds.</p>
                 <p>Use your stake in DeFi.</p>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-8 pt-8">
+              <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 xs:gap-4 sm:gap-8 pt-6 sm:pt-14">
                 <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center mr-2">
+                  <div className="flex items-center justify-center mb-1 sm:mb-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-400 rounded-full flex items-center justify-center mr-1 sm:mr-2">
                       <span className="text-xs">👥</span>
                     </div>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold text-white" data-testid="text-total-stakers">86k+</div>
+                  <div className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold text-white" data-testid="text-total-stakers">86k+</div>
                   <div className="text-xs sm:text-sm text-gray-300">Total stakers</div>
                 </div>
                 <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center mr-2">
+                  <div className="flex items-center justify-center mb-1 sm:mb-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-400 rounded-full flex items-center justify-center mr-1 sm:mr-2">
                       <span className="text-xs">💎</span>
                     </div>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold text-white" data-testid="text-total-staked">{COIN_TICKER} 317.63k</div>
+                  <div className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold text-white" data-testid="text-total-staked">{COIN_TICKER} 317.63k</div>
                   <div className="text-xs sm:text-sm text-gray-300">Total staked</div>
                 </div>
                 <div className="text-center">
-                  <div className="flex items-center justify-center mb-2">
-                    <div className="w-6 h-6 bg-gray-400 rounded-full flex items-center justify-center mr-2">
+                  <div className="flex items-center justify-center mb-1 sm:mb-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-400 rounded-full flex items-center justify-center mr-1 sm:mr-2">
                       <span className="text-xs">🏆</span>
                     </div>
                   </div>
-                  <div className="text-2xl sm:text-3xl font-bold text-white" data-testid="text-rewards-paid">{COIN_TICKER} 26.14k</div>
+                  <div className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold text-white" data-testid="text-rewards-paid">{COIN_TICKER} 26.14k</div>
                   <div className="text-xs sm:text-sm text-gray-300">Rewards paid</div>
                 </div>
               </div>
             </div>
 
             {/* Right Side - Staking Calculator Widget */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {/* APY and Reward Card */}
-              <Card className="bg-white/80 backdrop-blur-md border-white/40 rounded-2xl">
-                <CardContent className="p-4">
+              <Card className="bg-white/80 backdrop-blur-md border-white/40 rounded-xl sm:rounded-2xl">
+                <CardContent className="p-3 sm:p-4">
                   <div className="flex justify-between items-center">
-                    <div className="text-sm text-gray-600 mb-1">Monthly Return</div>
-                    <div className="text-2xl font-bold text-gray-900">{apy}%</div>
+                    <div className="text-xs sm:text-sm text-gray-600 mb-1">Monthly Return</div>
+                    <div className="text-lg sm:text-2xl font-bold text-gray-900">{apy}%</div>
                   </div>
-                  <div className="flex justify-between items-center mt-2">
-                    <div className="text-sm text-gray-600 mb-1">You will receive</div>
-                    <div className="text-2xl font-bold text-gray-900">{COIN_TICKER} {annualReward.toFixed(5)}</div>
+                  <div className="flex justify-between items-center mt-1 sm:mt-2">
+                    <div className="text-xs sm:text-sm text-gray-600 mb-1">You will receive</div>
+                    <div className="text-base sm:text-2xl font-bold text-gray-900">{COIN_TICKER} {annualReward.toFixed(5)}</div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Main Staking Input */}
-              <Card className="bg-white/90 backdrop-blur-md border-white/50 rounded-2xl shadow-xl">
-                <CardContent className="p-6 space-y-6">
+              <Card className="bg-white/90 backdrop-blur-md border-white/50 rounded-xl sm:rounded-2xl shadow-xl">
+                <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <Input
                         type="number"
                         value={stakeAmount}
                         onChange={(e) => setStakeAmount(parseFloat(e.target.value) || 0)}
-                        className="text-4xl font-bold bg-transparent border-none text-gray-900 placeholder-gray-500 p-0 h-auto focus:outline-none"
-                        style={{ fontSize: '2.5rem', fontWeight: 'bold' }}
+                        className="text-2xl sm:text-4xl font-bold bg-transparent border-none text-gray-900 placeholder-gray-500 p-0 h-auto focus:outline-none"
+                        style={{ fontSize: '1.75rem', fontWeight: 'bold' }}
                         min="0"
                         step="0.1"
                         data-testid="input-stake-amount"
                       />
                       <div className="text-right">
-                        <div className="text-2xl font-bold text-gray-900">{COIN_TICKER}</div>
+                        <div className="text-lg sm:text-2xl font-bold text-gray-900">{COIN_TICKER}</div>
                       </div>
                     </div>
 
                   </div>
 
                   {/* Lock Period Slider */}
-                  <div className="space-y-3">
-                    <div className="text-sm text-gray-700 font-medium">Lock Period: {lockPeriod[0]} year(s)</div>
+                  <div className="space-y-2 sm:space-y-3">
+                    <div className="text-xs sm:text-sm text-gray-700 font-medium">Lock Period: {lockPeriod[0]} year(s)</div>
                     <Slider
                       value={lockPeriod}
                       onValueChange={setLockPeriod}
@@ -151,7 +151,7 @@ export default function Home() {
                   <div className="flex justify-center">
                     <Link href="/stake">
                       <Button 
-                        className="neon-button w-auto px-16 py-8 text-white font-semibold rounded-full text-xl shadow-lg hover:shadow-xl transition-all duration-300 mt-4"
+                        className="neon-button w-auto px-8 sm:px-16 py-4 sm:py-8 text-white font-semibold rounded-full text-base sm:text-xl shadow-lg hover:shadow-xl transition-all duration-300 mt-2 sm:mt-4"
                         data-testid="button-stake"
                       >
                         Stake
@@ -199,9 +199,9 @@ export default function Home() {
                 <h3 className="text-2xl font-bold mb-4 text-white">Simple and secure</h3>
                 <h4 className="text-lg font-semibold text-white mb-4">staking with {STAKED_DERIVATIVE}.</h4>
                 
-                <div className="space-y-4 text-gray-300 text-left">
-                  <p className="text-sm leading-relaxed">
-                    Get <span className="text-white font-semibold">{STAKED_DERIVATIVE}</span> and start staking in 
+                <div className="space-y-4 text-gray-300 text-center">
+                  <p className="text-sm leading-relaxed ">
+                    Get  <span className="text-white font-semibold">{STAKED_DERIVATIVE}</span> and start staking in 
                     seconds. Staking has never been easier.
                   </p>
                   <p className="text-sm leading-relaxed">
@@ -209,7 +209,7 @@ export default function Home() {
                     by holding {STAKED_DERIVATIVE}.
                   </p>
                 </div>
-
+                 <Link href="/stake">
                 <div className="mt-6">
                   <Button 
                     variant="outline" 
@@ -218,6 +218,7 @@ export default function Home() {
                     Stake with {STAKED_DERIVATIVE}
                   </Button>
                 </div>
+                </Link>
               </CardContent>
             </Card>
 
@@ -233,27 +234,27 @@ export default function Home() {
                 <div className="w-20 h-20 mx-auto mb-6 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center">
                   <div className="text-4xl">📦</div>
                 </div>
-                <h3 className="text-2xl font-bold mb-2 text-white">Staking</h3>
-                <h4 className="text-xl font-bold mb-2 text-white">marketplace with</h4>
-                <h4 className="text-xl font-bold mb-6 text-white">unbeatable terms.</h4>
+                <h3 className="text-2xl font-bold mb-2 text-white">A Powerful Rewards</h3>
+                <h4 className="text-xl font-bold mb-2 text-white">Engine</h4>
                 
-                <div className="space-y-4 text-gray-100 text-left">
+                <div className="space-y-4 text-gray-100 text-center">
                   <p className="text-sm leading-relaxed">
-                    Browse <span className="text-white font-semibold">Vaults</span> and stake with the 
-                    node operators that meet your criteria.
+                   Our protocol is engineered for maximum yield. Your staked ZE balance grows in real-time. 
                   </p>
                   <p className="text-sm leading-relaxed">
-                    <span className="text-white font-semibold">Higher yield, more decentralization</span> and control.
+                    <span className="text-white font-semibold">Compound your earnings effortlessly and watch your investment grow.</span>
                   </p>
                 </div>
 
                 <div className="mt-6">
+                  <Link href="/profile">
                   <Button 
                     variant="outline" 
                     className="bg-white/20 border-white/40 text-white hover:bg-white/30 rounded-full px-6 py-2"
                   >
-                    Stake with Vaults
+                    View Reward Details
                   </Button>
+                  </Link>
                 </div>
               </CardContent>
             </Card>
@@ -273,7 +274,7 @@ export default function Home() {
                 <h3 className="text-2xl font-bold mb-2 text-white">Complete</h3>
                 <h4 className="text-xl font-bold mb-6 text-white">DeFi Ecosystem.</h4>
                 
-                <div className="space-y-4 text-gray-100 text-left">
+                <div className="space-y-4 text-gray-100 text-center">
                   <p className="text-sm leading-relaxed">
                     <span className="text-white font-semibold">Education Platform</span>, Real Estate Investment, 
                     Shopping Marketplace, and AI-powered services.
@@ -530,14 +531,17 @@ export default function Home() {
               <p className="text-xs text-gray-400">
                 Stay connected across all platforms
               </p>
+              
+            </div>
+            {/* Copyright */}
+            <div></div>
+             <div className="text-center">
+          <div className="border-t border-gray-700/50 pt-8 text-center justify-center items-center flex">
+            <div className="text-sm text-gray-500 text-center justify-center items-center flex">
+              © 2024 {APP_NAME} Protocol. All rights reserved.
+              </div>
             </div>
           </div>
-
-          {/* Copyright */}
-          <div className="border-t border-gray-700/50 pt-8 text-center">
-            <div className="text-sm text-gray-500">
-              © 2024 {APP_NAME} Protocol. All rights reserved.
-            </div>
           </div>
         </div>
       </footer>

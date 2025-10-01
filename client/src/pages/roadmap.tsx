@@ -3,7 +3,7 @@ import CircularRoadmap from '@/components/circular-roadmap';
 export default function RoadMap() {
   return (
     <div className="min-h-screen pt-24 pb-20 bg-black">
-      <div className="container mx-auto px-4 sm:px-6">
+      <div className="container mx-auto px-4 sm:px-6 xl:max-w-full xl:px-8 2xl:px-16 mt-12">
         <CircularRoadmap />
         
         {/* Additional Information Section */}

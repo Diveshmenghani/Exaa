@@ -60,7 +60,7 @@ export default function StakingCalculator({ onCalculationChange }: StakingCalcul
   return (
     <div className="grid lg:grid-cols-2 gap-8">
       {/* Calculator Inputs */}
-      <Card className="glass-card">
+      <Card className="glass-card-transparent">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Stake Your {COIN_TICKER}</CardTitle>
         </CardHeader>
@@ -113,7 +113,7 @@ export default function StakingCalculator({ onCalculationChange }: StakingCalcul
       </Card>
 
       {/* Rewards Preview */}
-      <Card className="glass-card">
+      <Card className="glass-card-transparent">
         <CardHeader>
           <CardTitle className="text-2xl font-bold">Reward Calculation</CardTitle>
         </CardHeader>

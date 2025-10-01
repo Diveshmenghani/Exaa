@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
 import { useContract } from '@/hooks/use-contract';
+import { useNetwork } from '@/hooks/use-network';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { User, Referral } from '@shared/schema';
@@ -18,6 +19,7 @@ export default function Profile() {
   
   const { walletAddress, isConnected } = useWallet();
   const { getTokenBalance, getTotalStaked, unstake, getUserStakes } = useContract();
+  const { getNetworkConfig, currentNetwork } = useNetwork();
   const [referralCode, setReferralCode] = useState('');
   const [isRegistering, setIsRegistering] = useState(false);
 
@@ -35,12 +37,14 @@ export default function Profile() {
 
   // Fetch real token balance from blockchain
   const { data: realTokenBalance = '0', isLoading: balanceLoading, error: balanceError, refetch: refetchBalance } = useQuery({
-    queryKey: ['tokenBalance', walletAddress],
+    queryKey: ['tokenBalance', walletAddress, currentNetwork.id],
     queryFn: async () => {
       if (!walletAddress || !getTokenBalance) return '0';
-      return await getTokenBalance(walletAddress);
+      const networkConfig = getNetworkConfig(currentNetwork.id);
+      const zeTokenAddress = networkConfig.contracts.ZE_TOKEN_ADDRESS;
+      return await getTokenBalance(zeTokenAddress, walletAddress);
     },
-    enabled: !!walletAddress && !!getTokenBalance,
+    enabled: !!walletAddress && !!getTokenBalance && !!currentNetwork,
     refetchInterval: 5000, // Refetch every 5 seconds for real-time updates
     retry: (failureCount, error) => {
       // Retry up to 3 times with exponential backoff
@@ -322,7 +326,7 @@ export default function Profile() {
   // Main profile view
   return (
     <div className="min-h-screen pt-24 pb-20 bg-black">
-      <div className="container mx-auto px-4 sm:px-6">
+      <div className="container mx-auto px-4 sm:px-6 xl:max-w-full xl:px-8 2xl:px-16 mt-12">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold mb-4">
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
