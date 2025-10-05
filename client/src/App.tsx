@@ -1,5 +1,5 @@
 import { Switch, Route } from "wouter";
-import { queryClient } from "./lib/queryClient";
+import { queryClient } from "./lib/queryClientMock";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,6 +7,7 @@ import { WalletProvider } from "@/hooks/use-wallet";
 import { ContractProvider } from "@/hooks/use-contract";
 import { NetworkProvider } from "@/hooks/use-network";
 import NotFound from "@/pages/not-found";
+import Landing from "@/pages/landing";
 import Home from "@/pages/home";
 import Swap from "@/pages/swap";
 import Stake from "@/pages/stake";
@@ -19,18 +20,46 @@ import ScrollIndicator from "@/components/scroll-indicator";
 
 function Router() {
   return (
-    <>
-      <Navbar />
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/swap" component={Swap} />
-        <Route path="/stake" component={Stake} />
-        <Route path="/unstake" component={Unstake} />
-        <Route path="/profile" component={Profile} />
-        <Route path="/roadmap" component={RoadMap} />
-        <Route component={NotFound} />
-      </Switch>
-    </>
+    <Switch>
+      <Route path="/" component={Landing} />
+      <Route path="/home">
+        <>
+          <Navbar />
+          <Home />
+        </>
+      </Route>
+      <Route path="/swap">
+        <>
+          <Navbar />
+          <Swap />
+        </>
+      </Route>
+      <Route path="/stake">
+        <>
+          <Navbar />
+          <Stake />
+        </>
+      </Route>
+      <Route path="/unstake">
+        <>
+          <Navbar />
+          <Unstake />
+        </>
+      </Route>
+      <Route path="/profile">
+        <>
+          <Navbar />
+          <Profile />
+        </>
+      </Route>
+      <Route path="/roadmap">
+        <>
+          <Navbar />
+          <RoadMap />
+        </>
+      </Route>
+      <Route component={NotFound} />
+    </Switch>
   );
 }
 

@@ -9,7 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
 import { useContract } from '@/hooks/use-contract';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClientMock';
 import { COIN_TICKER } from '@/lib/branding';
 import { ethers } from 'ethers';
 
@@ -25,12 +25,12 @@ export default function Stake() {
   const [showValidationDialog, setShowValidationDialog] = useState(false);
   const [validationReferrer, setValidationReferrer] = useState('');
 
-  // Calculate APY based on lock period
-  const calculateAPY = (months: number) => {
-    if (months >= 36) return 18; // 3 years = 18%
-    if (months >= 24) return 15; // 2 years = 15%
-    if (months >= 12) return 12; // 1 year = 12%
-    return 10; // Less than 1 year = 10%
+  // Calculate APY based on lock period (in years)
+  const calculateAPY = (years: number) => {
+    if (years === 1) return 10;
+    if (years === 2) return 12;
+    if (years === 3) return 15;
+    return 10;
   };
 
   // Calculate estimated rewards
@@ -39,7 +39,7 @@ export default function Stake() {
     const amount = parseFloat(stakeAmount);
     const apy = calculateAPY(lockPeriod[0]);
     const monthlyReward = (amount * apy) / 100;
-    return monthlyReward * lockPeriod[0];
+    return monthlyReward * lockPeriod[0] * 12; // Convert years to months for total calculation
   };
 
   // Real API calls for user data and stats
@@ -101,7 +101,7 @@ export default function Stake() {
     onSuccess: () => {
       toast({
         title: 'Staking Successful!',
-        description: `Successfully staked ${stakeAmount} ${COIN_TICKER} for ${Math.ceil(lockPeriod[0]/12)} years.`,
+        description: `Successfully staked ${stakeAmount} ${COIN_TICKER} for ${lockPeriod[0]} year${lockPeriod[0] !== 1 ? 's' : ''}.`,
       });
       setStakeAmount('');
       setReferrerAddress('');
@@ -181,8 +181,8 @@ export default function Stake() {
       }
     }
     
-    // Convert months to years for the contract (rounding up)
-    const lockYears = Math.ceil(lockPeriod[0] / 12);
+    // Use the lock period directly as it's already in years
+    const lockYears = lockPeriod[0];
     
     // Close dialog and proceed with staking
     setShowValidationDialog(false);
@@ -262,6 +262,16 @@ export default function Stake() {
   return (
     <div className="min-h-screen pt-40 pb-20 bg-black">
       <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
+        {/* Page Heading */}
+        <div className="text-center mb-16">
+          <h1 className="text-5xl font-bold mb-4">
+            <span className="bg-gradient-to-r from-accent to-destructive bg-clip-text text-transparent">
+              Stake
+            </span>
+          </h1>
+          <p className="text-xl text-muted-foreground">Stake your tokens and earn rewards</p>
+        </div>
+
         {/* Main Staking Interface */}
         <Card className="glass-card mb-8">
           <CardContent className="p-8">
@@ -341,10 +351,10 @@ export default function Stake() {
                 <div className="space-y-6 mb-8 p-6 bg-muted/10 rounded-xl">
                   <div className="text-center">
                     <Label className="text-lg font-semibold block mb-2">
-                      Lock Period: {lockPeriod[0]} months
+                      Lock Period: {lockPeriod[0]} year{lockPeriod[0] !== 1 ? 's' : ''}
                     </Label>
                     <div className="text-2xl font-bold text-secondary mb-4">
-                      {Math.floor(lockPeriod[0] / 12)} Year{Math.floor(lockPeriod[0] / 12) !== 1 ? 's' : ''}
+                      {lockPeriod[0]} Year{lockPeriod[0] !== 1 ? 's' : ''}
                     </div>
                   </div>
                   
@@ -352,25 +362,16 @@ export default function Stake() {
                     <Slider
                       value={lockPeriod}
                       onValueChange={setLockPeriod}
-                      min={12}
-                      max={36}
+                      min={1}
+                      max={3}
                       step={1}
                       className="w-full slider-smooth"
                       data-testid="slider-lock-period"
                     />
                     <div className="flex justify-between text-sm text-muted-foreground mt-4">
-                      <div className="text-center">
-                        <div className="font-semibold">1 Year</div>
-                        <div className="text-xs">12 months</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-semibold">2 Years</div>
-                        <div className="text-xs">24 months</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="font-semibold">3 Years</div>
-                        <div className="text-xs">36 months</div>
-                      </div>
+                      <span>1</span>
+                      <span>2</span>
+                      <span>3</span>
                     </div>
                   </div>
                 </div>
@@ -382,7 +383,7 @@ export default function Stake() {
                     {calculateRewards().toLocaleString()} {COIN_TICKER}
                   </div>
                   <div className="text-sm font-medium mt-1">
-                    APY: <span className="text-primary font-bold">{calculateAPY(lockPeriod[0])}%</span> monthly
+                    APY: <span className="text-primary font-bold">{calculateAPY(lockPeriod[0])}%</span> yearly
                   </div>
                 </div>
 
@@ -480,7 +481,7 @@ export default function Stake() {
               </div>
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Lock Period:</span>
-                <span className="text-sm">{lockPeriod[0]} months</span>
+                <span className="text-sm">{lockPeriod[0]} year{lockPeriod[0] !== 1 ? 's' : ''}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Estimated APY:</span>
@@ -489,7 +490,7 @@ export default function Stake() {
               <div className="flex justify-between">
                 <span className="text-sm font-medium">Estimated Rewards:</span>
                 <span className="text-sm">
-                  {(Number(stakeAmount) * calculateAPY(lockPeriod[0]) / 100 * lockPeriod[0] / 12).toFixed(2)} {COIN_TICKER}
+                  {(Number(stakeAmount) * calculateAPY(lockPeriod[0]) / 100 * lockPeriod[0]).toFixed(2)} {COIN_TICKER}
                 </span>
               </div>
             </div>

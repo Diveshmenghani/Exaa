@@ -135,31 +135,31 @@ export default function Navbar() {
         {isMobileMenuOpen && (
           <div className="lg:hidden mt-4 pb-4 border-t border-gray-800">
             <div className="flex flex-col space-y-4 pt-4">
-              {/* Mobile Navigation Links */}
+              {/* Mobile Navigation Links - Left aligned */}
               <Link href="/" data-testid="link-nav-home-mobile">
-                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
+                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2 text-left"
                       onClick={() => setIsMobileMenuOpen(false)}>Home</span>
               </Link>
               <Link href="/stake" data-testid="link-nav-stake-mobile">
-                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
+                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2 text-left"
                       onClick={() => setIsMobileMenuOpen(false)}>Stake</span>
               </Link>
               <Link href="/swap" data-testid="link-nav-swap-mobile">
-                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
+                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2 text-left"
                       onClick={() => setIsMobileMenuOpen(false)}>Swap</span>
               </Link>
               <Link href="/roadmap" data-testid="link-nav-roadmap-mobile">
-                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
+                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2 text-left"
                       onClick={() => setIsMobileMenuOpen(false)}>RoadMap</span>
               </Link>
               <Link href="/profile" data-testid="link-nav-profile-mobile">
-                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2"
+                <span className="block text-foreground hover:text-primary transition-colors cursor-pointer text-base font-medium py-2 text-left"
                       onClick={() => setIsMobileMenuOpen(false)}>Profile</span>
               </Link>
               
               {/* Mobile Network Selector */}
               <div className="py-2">
-                <span className="text-sm font-medium text-muted-foreground mb-2 block">Network</span>
+                <span className="text-sm font-medium text-muted-foreground mb-2 block text-left">Network</span>
                 <Select value={networkId} onValueChange={handleNetworkChange}>
                   <SelectTrigger className="w-full bg-gray-800/50 border-gray-700">
                     <SelectValue>
@@ -186,7 +186,33 @@ export default function Navbar() {
                 </Select>
               </div>
 
-              {/* Mobile Wallet Section - Removed as per instruction */}
+              {/* Mobile Wallet Section - Left aligned */}
+              <div className="pt-2 border-t border-gray-800">
+                {isConnected ? (
+                  <div className="flex flex-col space-y-3">
+                    <span className="text-sm text-muted-foreground text-left" data-testid="text-wallet-address-mobile">
+                      {walletAddress?.substring(0, 6)}...{walletAddress?.substring(walletAddress.length - 4)}
+                    </span>
+                    <Button 
+                      onClick={disconnect}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-left justify-start"
+                      data-testid="button-disconnect-wallet-mobile"
+                    >
+                      Disconnect Wallet
+                    </Button>
+                  </div>
+                ) : (
+                  <Button 
+                    onClick={connect}
+                    className="neon-button w-full py-3 text-white font-semibold text-sm"
+                    data-testid="button-connect-wallet-mobile"
+                  >
+                    Connect Wallet
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         )}

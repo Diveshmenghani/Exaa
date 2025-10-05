@@ -198,3 +198,48 @@
   from { box-shadow: 0 0 20px rgba(0, 212, 255, 0.5); }
   to { box-shadow: 0 0 30px rgba(139, 92, 246, 0.8); }
 }
+
+/* Gradient text styles */
+.gradient-text {
+  background: linear-gradient(135deg, hsl(184, 100%, 50%), hsl(270, 100%, 65%), hsl(320, 100%, 65%));
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 200%;
+  animation: gradient 3s ease infinite;
+}
+
+/* Hover effects */
+.hover-elevate {
+  transition: all 0.3s ease;
+}
+
+.hover-elevate:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.active-elevate-2:active {
+  transform: translateY(0px);
+}
+
+/* Animate float with delays */
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.delay-500 {
+  animation-delay: 0.5s;
+}
+
+.delay-1000 {
+  animation-delay: 1s;
+}
+
+.delay-1500 {
+  animation-delay: 1.5s;
+}
+
+.delay-2000 {
+  animation-delay: 2s;
+}

@@ -6,7 +6,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useWallet } from '@/hooks/use-wallet';
 import { useContract } from '@/hooks/use-contract';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClientMock';
 import { Stake, ContractSettings } from '@shared/schema';
 import { COIN_TICKER } from '@/lib/branding';
 import { ethers } from 'ethers';

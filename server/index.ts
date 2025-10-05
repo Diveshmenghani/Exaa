@@ -59,9 +59,14 @@ app.use((req, res, next) => {
   // Serve the app on the port specified in the environment variable PORT
   // Default to 5000 if not specified.
   // This serves both the API and the client.
-  const port = parseInt(process.env.PORT || '5000', 10);
-  server.listen(port, "localhost", () => {
-    log(`serving on http://localhost:${port}`);
+  // For IIS Node, use process.env.PORT or process.env.IISNODE_PORT
+  const port = parseInt(process.env.PORT || process.env.IISNODE_PORT || '5000', 10);
+  
+  // For IIS Node deployment, don't bind to localhost specifically
+  const host = process.env.IISNODE_PORT ? undefined : "localhost";
+  
+  server.listen(port, host, () => {
+    log(`serving on ${host ? `http://${host}:${port}` : `port ${port}`}`);
   });
 })();
 

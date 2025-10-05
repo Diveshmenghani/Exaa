@@ -58,13 +58,13 @@ export default function StakingCalculator({ onCalculationChange }: StakingCalcul
   }, [stakeAmount, lockPeriod, referralLevel, onCalculationChange]);
 
   return (
-    <div className="grid lg:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
       {/* Calculator Inputs */}
       <Card className="glass-card-transparent">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Stake Your {COIN_TICKER}</CardTitle>
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold">Stake Your {COIN_TICKER}</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-4 sm:space-y-6">
           <div>
             <Label className="block text-sm font-medium mb-2">Stake Amount</Label>
             <Input
@@ -72,7 +72,7 @@ export default function StakingCalculator({ onCalculationChange }: StakingCalcul
               placeholder="1000"
               value={stakeAmount}
               onChange={(e) => setStakeAmount(e.target.value)}
-              className="w-full p-4 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors"
+              className="w-full p-3 sm:p-4 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors text-sm sm:text-base"
               data-testid="input-stake-amount"
             />
           </div>
@@ -80,7 +80,7 @@ export default function StakingCalculator({ onCalculationChange }: StakingCalcul
           <div>
             <Label className="block text-sm font-medium mb-2">Lock Period</Label>
             <Select value={lockPeriod.toString()} onValueChange={(value) => setLockPeriod(parseInt(value))}>
-              <SelectTrigger className="w-full p-4 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors" data-testid="select-lock-period">
+              <SelectTrigger className="w-full p-3 sm:p-4 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors text-sm sm:text-base" data-testid="select-lock-period">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -96,7 +96,7 @@ export default function StakingCalculator({ onCalculationChange }: StakingCalcul
           <div>
             <Label className="block text-sm font-medium mb-2">Your Referral Level</Label>
             <Select value={referralLevel.toString()} onValueChange={(value) => setReferralLevel(parseInt(value))}>
-              <SelectTrigger className="w-full p-4 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors" data-testid="select-referral-level">
+              <SelectTrigger className="w-full p-3 sm:p-4 bg-muted/20 rounded-xl border border-border focus:border-primary transition-colors text-sm sm:text-base" data-testid="select-referral-level">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -114,48 +114,48 @@ export default function StakingCalculator({ onCalculationChange }: StakingCalcul
 
       {/* Rewards Preview */}
       <Card className="glass-card-transparent">
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Reward Calculation</CardTitle>
+        <CardHeader className="pb-4 sm:pb-6">
+          <CardTitle className="text-lg sm:text-xl lg:text-2xl font-bold">Reward Calculation</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="flex justify-between items-center p-4 bg-muted/10 rounded-xl">
-              <span>Stake Amount</span>
-              <span className="font-bold" data-testid="text-display-stake-amount">
+        <CardContent className="space-y-4 sm:space-y-6">
+          <div className="space-y-3 sm:space-y-4">
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-muted/10 rounded-xl">
+              <span className="text-sm sm:text-base">Stake Amount</span>
+              <span className="font-bold text-sm sm:text-base" data-testid="text-display-stake-amount">
                 {parseInt(stakeAmount || '0').toLocaleString()} {COIN_TICKER}
               </span>
             </div>
-            <div className="flex justify-between items-center p-4 bg-muted/10 rounded-xl">
-              <span>Monthly APY</span>
-              <span className="font-bold text-primary" data-testid="text-display-apy">
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-muted/10 rounded-xl">
+              <span className="text-sm sm:text-base">Monthly APY</span>
+              <span className="font-bold text-primary text-sm sm:text-base" data-testid="text-display-apy">
                 {calculation.baseAPY}%
               </span>
             </div>
-            <div className="flex justify-between items-center p-4 bg-muted/10 rounded-xl">
-              <span>Referral Bonus</span>
-              <span className="font-bold text-secondary" data-testid="text-display-referral-bonus">
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-muted/10 rounded-xl">
+              <span className="text-sm sm:text-base">Referral Bonus</span>
+              <span className="font-bold text-secondary text-sm sm:text-base" data-testid="text-display-referral-bonus">
                 {calculation.referralBonus}%
               </span>
             </div>
-            <div className="flex justify-between items-center p-4 bg-primary/20 rounded-xl border border-primary/30">
-              <span>Monthly Rewards</span>
-              <span className="font-bold text-primary text-xl" data-testid="text-display-monthly-rewards">
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-primary/20 rounded-xl border border-primary/30">
+              <span className="text-sm sm:text-base">Monthly Rewards</span>
+              <span className="font-bold text-primary text-lg sm:text-xl" data-testid="text-display-monthly-rewards">
                 {Math.round(calculation.monthlyRewards).toLocaleString()} {COIN_TICKER}
               </span>
             </div>
-            <div className="flex justify-between items-center p-4 bg-secondary/20 rounded-xl border border-secondary/30">
-              <span>Total After Lock Period</span>
-              <span className="font-bold text-secondary text-xl" data-testid="text-display-total-rewards">
+            <div className="flex justify-between items-center p-3 sm:p-4 bg-secondary/20 rounded-xl border border-secondary/30">
+              <span className="text-sm sm:text-base">Total After Lock Period</span>
+              <span className="font-bold text-secondary text-lg sm:text-xl" data-testid="text-display-total-rewards">
                 {Math.round(calculation.totalRewards).toLocaleString()} {COIN_TICKER}
               </span>
             </div>
           </div>
 
           {/* APY Chart Placeholder */}
-          <div className="p-6 bg-muted/10 rounded-xl">
-            <h4 className="font-semibold mb-4">Rewards Over Time</h4>
-            <div className="h-32 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-lg flex items-end justify-center">
-              <span className="text-muted-foreground text-sm">Interactive chart visualization</span>
+          <div className="p-4 sm:p-6 bg-muted/10 rounded-xl">
+            <h4 className="font-semibold mb-3 sm:mb-4 text-sm sm:text-base">Rewards Over Time</h4>
+            <div className="h-24 sm:h-32 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-lg flex items-end justify-center">
+              <span className="text-muted-foreground text-xs sm:text-sm">Interactive chart visualization</span>
             </div>
           </div>
         </CardContent>

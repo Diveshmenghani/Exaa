@@ -35,10 +35,10 @@ export default function Home() {
         </div>
         
         <div className="container mx-auto max-w-7xl xl:max-w-full xl:px-8 2xl:px-16 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             
             {/* Left Side - Hero Text */}
-            <div className="space-y-4 sm:space-y-8 px-4 sm:pl-10">
+            <div className="space-y-4 sm:space-y-8 px-4 sm:pl-10 order-1 lg:order-1">
               <div className="px-2 sm:pl-20">
                 <h1 className="text-3xl xs:text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black leading-tight">
                   <span className="bg-gradient-to-r from-cyan-400 via-purple-600 to-pink-500 bg-clip-text text-transparent">
@@ -53,30 +53,23 @@ export default function Home() {
                 </h1>
               </div>
               
-              <div className="space-y-2 sm:space-y-4 text-gray-300 text-sm sm:text-base sm:text-lg max-w-lg px-2 sm:pl-20">
-                <p>Go Solo or Pool with others.</p>
-                <p>Stake or unstake in seconds.</p>
-                <p>Use your stake in DeFi.</p>
+              <div className="px-2 sm:pl-20">
+                <p className="text-base sm:text-lg md:text-xl text-gray-300 leading-relaxed max-w-lg">
+                  Earn up to <span className="text-cyan-400 font-bold">15% monthly</span> returns 
+                  with our secure staking protocol. Join thousands of validators 
+                  securing the network.
+                </p>
               </div>
 
               {/* Stats */}
-              <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 xs:gap-4 sm:gap-8 pt-6 sm:pt-14">
+              <div className="grid grid-cols-2 gap-4 sm:gap-6 px-2 sm:pl-20 pt-4 sm:pt-8">
                 <div className="text-center">
                   <div className="flex items-center justify-center mb-1 sm:mb-2">
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-400 rounded-full flex items-center justify-center mr-1 sm:mr-2">
-                      <span className="text-xs">👥</span>
-                    </div>
-                  </div>
-                  <div className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold text-white" data-testid="text-total-stakers">86k+</div>
-                  <div className="text-xs sm:text-sm text-gray-300">Total stakers</div>
-                </div>
-                <div className="text-center">
-                  <div className="flex items-center justify-center mb-1 sm:mb-2">
-                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-gray-400 rounded-full flex items-center justify-center mr-1 sm:mr-2">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-cyan-400 rounded-full flex items-center justify-center mr-1 sm:mr-2">
                       <span className="text-xs">💎</span>
                     </div>
                   </div>
-                  <div className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold text-white" data-testid="text-total-staked">{COIN_TICKER} 317.63k</div>
+                  <div className="text-lg xs:text-xl sm:text-2xl md:text-3xl font-bold text-white" data-testid="text-total-staked">{COIN_TICKER} 400k</div>
                   <div className="text-xs sm:text-sm text-gray-300">Total staked</div>
                 </div>
                 <div className="text-center">
@@ -92,45 +85,45 @@ export default function Home() {
             </div>
 
             {/* Right Side - Staking Calculator Widget */}
-            <div className="space-y-3 sm:space-y-4">
+            <div className="space-y-3 sm:space-y-4 order-2 lg:order-2">
               {/* APY and Reward Card */}
               <Card className="bg-white/80 backdrop-blur-md border-white/40 rounded-xl sm:rounded-2xl">
-                <CardContent className="p-3 sm:p-4">
+                <CardContent className="p-4 sm:p-6">
                   <div className="flex justify-between items-center">
-                    <div className="text-xs sm:text-sm text-gray-600 mb-1">Monthly Return</div>
-                    <div className="text-lg sm:text-2xl font-bold text-gray-900">{apy}%</div>
+                    <div>
+                      <div className="text-xs sm:text-sm text-gray-600 mb-1">Monthly Return</div>
+                      <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900" data-testid="text-monthly-return">
+                        {Math.round(annualReward).toLocaleString()} {COIN_TICKER}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs sm:text-sm text-gray-600 mb-1">APY</div>
+                      <div className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600" data-testid="text-apy-display">{apy}%</div>
+                    </div>
                   </div>
-                  <div className="flex justify-between items-center mt-1 sm:mt-2">
-                    <div className="text-xs sm:text-sm text-gray-600 mb-1">You will receive</div>
-                    <div className="text-base sm:text-2xl font-bold text-gray-900">{COIN_TICKER} {annualReward.toFixed(5)}</div>
-                  </div>
-                </CardContent>
-              </Card>
 
-              {/* Main Staking Input */}
-              <Card className="bg-white/90 backdrop-blur-md border-white/50 rounded-xl sm:rounded-2xl shadow-xl">
-                <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <Input
+                  {/* Stake Amount Input */}
+                  <div className="mt-4 sm:mt-6">
+                    <div className="flex items-center justify-between bg-gray-100 rounded-xl p-3 sm:p-4">
+                      <input
                         type="number"
                         value={stakeAmount}
                         onChange={(e) => setStakeAmount(parseFloat(e.target.value) || 0)}
-                        className="text-2xl sm:text-4xl font-bold bg-transparent border-none text-gray-900 placeholder-gray-500 p-0 h-auto focus:outline-none"
-                        style={{ fontSize: '1.75rem', fontWeight: 'bold' }}
+                        className="text-xl sm:text-2xl lg:text-4xl font-bold bg-transparent border-none text-gray-900 placeholder-gray-500 p-0 h-auto focus:outline-none w-full"
+                        style={{ fontSize: 'clamp(1.25rem, 4vw, 2.25rem)', fontWeight: 'bold' }}
                         min="0"
                         step="0.1"
                         data-testid="input-stake-amount"
                       />
-                      <div className="text-right">
-                        <div className="text-lg sm:text-2xl font-bold text-gray-900">{COIN_TICKER}</div>
+                      <div className="text-right ml-2">
+                        <div className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900">{COIN_TICKER}</div>
                       </div>
                     </div>
 
                   </div>
 
                   {/* Lock Period Slider */}
-                  <div className="space-y-2 sm:space-y-3">
+                  <div className="space-y-2 sm:space-y-3 mt-4 sm:mt-6">
                     <div className="text-xs sm:text-sm text-gray-700 font-medium">Lock Period: {lockPeriod[0]} year(s)</div>
                     <Slider
                       value={lockPeriod}
@@ -148,10 +141,10 @@ export default function Home() {
                   </div>
 
                   {/* Stake Button */}
-                  <div className="flex justify-center">
+                  <div className="flex justify-center mt-4 sm:mt-6">
                     <Link href="/stake">
                       <Button 
-                        className="neon-button w-auto px-8 sm:px-16 py-4 sm:py-8 text-white font-semibold rounded-full text-base sm:text-xl shadow-lg hover:shadow-xl transition-all duration-300 mt-2 sm:mt-4"
+                        className="neon-button w-full sm:w-auto px-8 sm:px-16 py-3 sm:py-4 lg:py-8 text-white font-semibold rounded-full text-base sm:text-lg lg:text-xl shadow-lg hover:shadow-xl transition-all duration-300"
                         data-testid="button-stake"
                       >
                         Stake
@@ -169,12 +162,12 @@ export default function Home() {
       <section className="py-24 relative">
         <div className="container mx-auto px-6">
           <div className="text-center mb-20">
-            <h2 className="text-5xl font-bold mb-6 text-white">
+            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 text-white">
               Why Choose 
-              <span className="bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent ml-3">
+              <span className="bg-gradient-to-r from-cyan-400 to-purple-600 bg-clip-text text-transparent ml-3 block sm:inline">
                 {APP_NAME}
               </span>
-              ?
+              <span className="block sm:inline">?</span>
             </h2>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Experience the most advanced staking ecosystem with unmatched security, 
@@ -316,7 +309,8 @@ export default function Home() {
 
           <div className="grid lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {/* Quick Stake */}
-            <Link href="/stake">
+           
+
               <Card className="group relative overflow-hidden bg-gradient-to-br from-blue-500/20 to-purple-600/20 backdrop-blur-md border-blue-500/30 rounded-3xl transition-all duration-700 hover:scale-105 hover:shadow-2xl hover:shadow-blue-500/25 cursor-pointer">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-400/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
                 <CardContent className="p-8 text-center relative z-10">
@@ -346,7 +340,6 @@ export default function Home() {
                   </Button>
                 </CardContent>
               </Card>
-            </Link>
 
             {/* Token Swap */}
             <Link href="/swap">

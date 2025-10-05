@@ -8,7 +8,7 @@ import { useWallet } from '@/hooks/use-wallet';
 import { useContract } from '@/hooks/use-contract';
 import { useNetwork } from '@/hooks/use-network';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { apiRequest, queryClient } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClientMock';
 import { User, Referral } from '@shared/schema';
 import ReferralNetwork from '@/components/referral-network';
 import { APP_NAME, COIN_TICKER } from '@/lib/branding';
